@@ -23,7 +23,7 @@ void main()\n\
     vec4 transparent = vec4(accum.rgb / clamp(accum.a, 1e-4, 5e4), r);\n\
 #endif\n\
 \n\
-    gl_FragColor = (1.0 - transparent.a) * transparent + transparent.a * opaque;\n\
+    gl_FragColor = transparent;\n\
 \n\
     if (opaque != czm_backgroundColor)\n\
     {\n\
