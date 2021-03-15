@@ -2266,8 +2266,6 @@ var scratchOrthographicFrustum = new OrthographicFrustum();
 var scratchOrthographicOffCenterFrustum = new OrthographicOffCenterFrustum();
 
 function executeCommands(scene, passState) {
-  // jadd
-  console.log('Enter function executeCommands(scene, passState)')
   var camera = scene.camera;
   var context = scene.context;
   var frameState = scene.frameState;
@@ -2445,8 +2443,6 @@ function executeCommands(scene, passState) {
     us.updatePass(Pass.GLOBE);
     var commands = frustumCommands.commands[Pass.GLOBE];
     var length = frustumCommands.indices[Pass.GLOBE];
-    // jadd
-    console.log('updatePass(Pass.GLOBE)')
 
     if (globeTranslucent) {
       globeTranslucencyState.executeGlobeCommands(
@@ -2479,8 +2475,6 @@ function executeCommands(scene, passState) {
       us.updatePass(Pass.TERRAIN_CLASSIFICATION);
       commands = frustumCommands.commands[Pass.TERRAIN_CLASSIFICATION];
       length = frustumCommands.indices[Pass.TERRAIN_CLASSIFICATION];
-      // jadd
-      console.log('updatePass(Pass.TERRAIN_CLASSIFICATION)')
 
       if (globeTranslucent) {
         globeTranslucencyState.executeGlobeClassificationCommands(
@@ -2520,12 +2514,14 @@ function executeCommands(scene, passState) {
       us.updatePass(Pass.CESIUM_3D_TILE);
       commands = frustumCommands.commands[Pass.CESIUM_3D_TILE];
       length = frustumCommands.indices[Pass.CESIUM_3D_TILE];
+      passState.framebuffer = undefined; // jadd
       // jadd
-      console.log('updatePass(Pass.CESIUM_3D_TILE)')
+      // console.log('updatePass(Pass.CESIUM_3D_TILE)')
       for (j = 0; j < length; ++j) {
         executeCommand(commands[j], scene, context, passState);
       }
 
+      length = 0; // jadd
       if (length > 0) {
         if (defined(globeDepth) && environmentState.useGlobeDepthFramebuffer) {
           globeDepth.executeUpdateDepth(context, passState, clearGlobeDepth);
@@ -2634,8 +2630,6 @@ function executeCommands(scene, passState) {
     us.updatePass(Pass.OPAQUE);
     commands = frustumCommands.commands[Pass.OPAQUE];
     length = frustumCommands.indices[Pass.OPAQUE];
-    // jadd
-    console.log('updatePass(Pass.OPAQUE)')
     for (j = 0; j < length; ++j) {
       executeCommand(commands[j], scene, context, passState);
     }
@@ -2658,8 +2652,6 @@ function executeCommands(scene, passState) {
     }
 
     us.updatePass(Pass.TRANSLUCENT);
-    // jadd
-    console.log('updatePass(Pass.TRANSLUCENT)')
     commands = frustumCommands.commands[Pass.TRANSLUCENT];
     commands.length = frustumCommands.indices[Pass.TRANSLUCENT];
     // executeTranslucentCommands(
@@ -3445,6 +3437,7 @@ function updateAndClearFramebuffers(scene, passState, clearColor) {
   var oit = view.oit;
   var useOIT = (environmentState.useOIT =
     !picking && defined(oit) && oit.isSupported());
+  useOIT = false; // jadd
   if (useOIT) {
     oit.update(context, passState, view.globeDepth.framebuffer, scene._hdr);
     oit.clear(context, passState, clearColor);
@@ -3550,6 +3543,7 @@ Scene.prototype.resolveFramebuffers = function (passState) {
     globeDepth.executeMergeColor(context, passState);
   }
 
+  useOIT = false; // jadd
   if (useOIT) {
     passState.framebuffer = usePostProcess
       ? sceneFramebuffer
@@ -3572,6 +3566,7 @@ Scene.prototype.resolveFramebuffers = function (passState) {
     postProcess.copy(context, defaultFramebuffer);
   }
 
+  useGlobeDepthFramebuffer = false; // jadd
   if (!useOIT && !usePostProcess && useGlobeDepthFramebuffer) {
     passState.framebuffer = defaultFramebuffer;
     globeDepth.executeCopyColor(context, passState);
