@@ -3437,7 +3437,6 @@ function updateAndClearFramebuffers(scene, passState, clearColor) {
   var oit = view.oit;
   var useOIT = (environmentState.useOIT =
     !picking && defined(oit) && oit.isSupported());
-  useOIT = false; // jadd
   if (useOIT) {
     oit.update(context, passState, view.globeDepth.framebuffer, scene._hdr);
     oit.clear(context, passState, clearColor);
@@ -3543,7 +3542,6 @@ Scene.prototype.resolveFramebuffers = function (passState) {
     globeDepth.executeMergeColor(context, passState);
   }
 
-  useOIT = false; // jadd
   if (useOIT) {
     passState.framebuffer = usePostProcess
       ? sceneFramebuffer
@@ -3566,7 +3564,6 @@ Scene.prototype.resolveFramebuffers = function (passState) {
     postProcess.copy(context, defaultFramebuffer);
   }
 
-  useGlobeDepthFramebuffer = false; // jadd
   if (!useOIT && !usePostProcess && useGlobeDepthFramebuffer) {
     passState.framebuffer = defaultFramebuffer;
     globeDepth.executeCopyColor(context, passState);

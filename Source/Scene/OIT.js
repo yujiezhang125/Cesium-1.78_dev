@@ -825,7 +825,7 @@ OIT.prototype.executeCommands = function (
 };
 
 OIT.prototype.execute = function (context, passState) {
-  this._compositeCommand.execute(context, passState);
+  // this._compositeCommand.execute(context, passState); // jadd comment
 };
 
 OIT.prototype.clear = function (context, passState, clearColor) {
