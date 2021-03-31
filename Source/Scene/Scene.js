@@ -2514,12 +2514,54 @@ function executeCommands(scene, passState) {
       us.updatePass(Pass.CESIUM_3D_TILE);
       commands = frustumCommands.commands[Pass.CESIUM_3D_TILE];
       length = frustumCommands.indices[Pass.CESIUM_3D_TILE];
-      passState.framebuffer = undefined; // jadd
+      // jadd
+      var gl = scene._context._gl
+
+      var FRAMEBUFFER_SIZE = {
+        x: scene._canvas.width,
+        y: scene._canvas.height
+      };
+      //jadd 生成空白texture，用于绑定给fbo_texture，接收blit复制的数据
+      var texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+
+      
+      var fbo_renderbuffer = gl.createFramebuffer(); // jadd 生成fbo，用于绑定renderbuffer，用于绘制以及被read
+      passState.framebuffer._framebuffer = fbo_renderbuffer; // jadd 以passState.framebuffer的_framebuffer作为fbo，用于绑定renderbuffer，用于绘制以及被read
+      var fbo_texture = gl.createFramebuffer(); // jadd 生成fbo，用于绑定texture，接收blit复制并绘制的数据
+
+      var colorRenderbuffer = gl.createRenderbuffer();
+      gl.bindRenderbuffer(gl.RENDERBUFFER, colorRenderbuffer);
+      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.RGBA8, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
+      gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, colorRenderbuffer);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+      // passState.framebuffer = fbo_renderbuffer; // jadd
       // jadd
       // console.log('updatePass(Pass.CESIUM_3D_TILE)')
       for (j = 0; j < length; ++j) {
         executeCommand(commands[j], scene, context, passState);
       }
+
+      // jadd 绘制之后blit
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_texture);
+      gl.clearBufferfv(gl.COLOR, 0, [0.0, 0.0, 0.0, 1.0]);
+      gl.blitFramebuffer(
+          0, 0, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y,
+          0, 0, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y,
+          gl.COLOR_BUFFER_BIT, gl.NEAREST
+      );
 
       length = 0; // jadd
       if (length > 0) {
