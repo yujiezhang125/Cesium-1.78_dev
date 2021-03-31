@@ -1159,6 +1159,9 @@ function continueDraw(context, drawCommand, shaderProgram, uniformMap) {
     offset = offset * indexBuffer.bytesPerIndex; // offset in vertices to offset in bytes
     count = defaultValue(count, indexBuffer.numberOfIndices);
     if (instanceCount === 0) {
+      // if(count == 36){
+      //   debugger
+      // }
       context._gl.drawElements(
         primitiveType,
         count,
