@@ -2530,9 +2530,14 @@ function executeCommands(scene, passState) {
       gl.bindTexture(gl.TEXTURE_2D, null);
 
       
-      var fbo_renderbuffer = gl.createFramebuffer(); // jadd 生成fbo，用于绑定renderbuffer，用于绘制以及被read
+      var FBOs = [
+        gl.createFramebuffer(),
+        gl.createFramebuffer()
+      ]
+      var fbo_renderbuffer = FBOs[0]; // jadd 生成fbo，用于绑定renderbuffer，用于绘制以及被read
+      // var originalPassStateFramebuffer = passState.framebuffer; // JSON.parse(JSON.stringify(passState.framebuffer)); // 保存最原先的帧缓冲区
       passState.framebuffer._framebuffer = fbo_renderbuffer; // jadd 以passState.framebuffer的_framebuffer作为fbo，用于绑定renderbuffer，用于绘制以及被read
-      var fbo_texture = gl.createFramebuffer(); // jadd 生成fbo，用于绑定texture，接收blit复制并绘制的数据
+      var fbo_texture = FBOs[1]; // jadd 生成fbo，用于绑定texture，接收blit复制并绘制的数据
 
       var colorRenderbuffer = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, colorRenderbuffer);
@@ -2544,6 +2549,8 @@ function executeCommands(scene, passState) {
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      // gl.bindFramebuffer(gl.FRAMEBUFFER, originalPassStateFramebuffer._framebuffer);
+      // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, originalPassStateFramebuffer.getColorTexture(0)._texture, 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
       // passState.framebuffer = fbo_renderbuffer; // jadd
@@ -2553,8 +2560,11 @@ function executeCommands(scene, passState) {
         executeCommand(commands[j], scene, context, passState);
       }
 
-      // jadd 绘制之后blit
-      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
+      // jadd 绘制之后恢复passState原本的framebuffer内容，而后blit
+      // passState.framebuffer = originalPassStateFramebuffer
+      // gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
+      // gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, passState.framebuffer._framebuffer);
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, passState.framebuffer._framebuffer);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_texture);
       gl.clearBufferfv(gl.COLOR, 0, [0.0, 0.0, 0.0, 1.0]);
       gl.blitFramebuffer(

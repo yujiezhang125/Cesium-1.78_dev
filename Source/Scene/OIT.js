@@ -212,6 +212,22 @@ OIT.prototype.update = function (context, passState, framebuffer, useHDR) {
   if (!this.isSupported()) {
     return;
   }
+  // jadd 将framebuffer的renderbuffer内容复制到colortexture
+  // var gl = context._gl
+  // var fbo_texture = gl.createFramebuffer(); // jadd 生成fbo，用于绑定texture，接收blit复制并绘制的数据
+  // gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
+  // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, framebuffer.getColorTexture(0)._texture, 0);
+  // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+
+  // gl.bindFramebuffer(gl.READ_FRAMEBUFFER, framebuffer._framebuffer);
+  // gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_texture);
+  // gl.clearBufferfv(gl.COLOR, 0, [0.0, 0.0, 0.0, 1.0]);
+  // gl.blitFramebuffer(
+  //   0, 0, context._canvas.width, context._canvas.height,
+  //   0, 0, context._canvas.width, context._canvas.height,
+  //   gl.COLOR_BUFFER_BIT, gl.NEAREST
+  // );
 
   this._opaqueFBO = framebuffer;
   this._opaqueTexture = framebuffer.getColorTexture(0);
@@ -825,7 +841,7 @@ OIT.prototype.executeCommands = function (
 };
 
 OIT.prototype.execute = function (context, passState) {
-  // this._compositeCommand.execute(context, passState); // jadd comment
+  this._compositeCommand.execute(context, passState); // jadd comment
 };
 
 OIT.prototype.clear = function (context, passState, clearColor) {
