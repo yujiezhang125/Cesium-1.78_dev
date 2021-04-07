@@ -1159,6 +1159,7 @@ UniformState.prototype.updateCamera = function (camera) {
  */
 UniformState.prototype.updateFrustum = function (frustum) {
   setProjection(this, frustum.projectionMatrix);
+  // console.log(JSON.stringify(frustum.projectionMatrix)) // jadd
   if (defined(frustum.infiniteProjectionMatrix)) {
     setInfiniteProjection(this, frustum.infiniteProjectionMatrix);
   }
