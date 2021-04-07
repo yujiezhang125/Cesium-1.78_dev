@@ -2539,14 +2539,33 @@ function executeCommands(scene, passState) {
       passState.framebuffer._framebuffer = fbo_renderbuffer; // jadd 以passState.framebuffer的_framebuffer作为fbo，用于绑定renderbuffer，用于绘制以及被read
       var fbo_texture = FBOs[1]; // jadd 生成fbo，用于绑定texture，接收blit复制并绘制的数据
 
+      // 初始化fbo_renderbuffer的colorAttachment要用的renderbuffer
       var colorRenderbuffer = gl.createRenderbuffer();
       gl.bindRenderbuffer(gl.RENDERBUFFER, colorRenderbuffer);
       gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.RGBA8, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
 
+      // renderbuffer已经初始化完成；附加到fbo_renderbuffer的ColorAttachment之前；初始化fbo_renderbuffer的DepthAttachment要用的texture
+      var dtExt = gl.getExtension('WEBGL_depth_texture') || gl.getExtension('WEBKIT_WEBGL_depth_texture') || gl.getExtension('MOZ_WEBGL_depth_texture');
+      var texture_fboDepth = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture_fboDepth);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.DEPTH_STENCIL, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y, 0, gl.DEPTH_STENCIL, dtExt.UNSIGNED_INT_24_8_WEBGL, null); // dtExt.UNSIGNED_INT_24_8_WEBGL
+      gl.bindTexture(gl.TEXTURE_2D, null);
+
+      // fbo_renderbuffer的colorAttachment要用的renderbuffer 和 depthAttachment要用的texture已经准备好；
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, colorRenderbuffer);
+
+      gl.bindTexture(gl.TEXTURE_2D, texture_fboDepth);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_STENCIL_ATTACHMENT, gl.TEXTURE_2D, texture_fboDepth, 0);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 
+      // fbo_texture将空白texture附加到colorattachment
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
       gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
       // gl.bindFramebuffer(gl.FRAMEBUFFER, originalPassStateFramebuffer._framebuffer);
