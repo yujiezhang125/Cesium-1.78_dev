@@ -2518,6 +2518,9 @@ function executeCommands(scene, passState) {
         executeCommand(commands[j], scene, context, passState);
       }
 
+      // jadd dumpFramebuffer
+      // scene.dumpFramebuffer();
+
       if (length > 0) {
         if (defined(globeDepth) && environmentState.useGlobeDepthFramebuffer) {
           globeDepth.executeUpdateDepth(context, passState, clearGlobeDepth);
@@ -3916,6 +3919,81 @@ Scene.prototype.forceRender = function (time) {
 Scene.prototype.requestRender = function () {
   this._renderRequested = true;
 };
+
+/** jadd
+ * Automatically download the dumped framebuffer texture.
+ * 
+ * @returns download picture
+ */
+ Scene.prototype.dumpFramebuffer = function () {
+  var gl = this._context._gl;
+  const width = this._canvas.width;
+  const height = this._canvas.height;
+
+  if( gl instanceof WebGL2RenderingContext ){
+    // console.log('wengl2.0');
+  }
+
+  if( gl instanceof WebGLRenderingContext ){
+    // console.log('webgl1.0');
+  }
+
+  if ( !!!width || !!!height ) {
+    console.log('Canvas width and height are undefined.');
+    return
+  }
+
+  // Read the content of the framebuffer
+  var numberOfChannelsByLine = width * 4;
+  var halfHeight = height /2;
+  var pixels = new Uint8Array( width * height * 4 )
+
+  // Reading data from WebGL
+  gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+  // To flip image on Y axis
+  for (var i = 0; i < halfHeight; i++){
+    for (var j = 0; j < numberOfChannelsByLine; j++){
+      var currentCell = j + i * numberOfChannelsByLine;
+      var targetLine = height - i - 1;
+      var targetCell = j + targetLine * numberOfChannelsByLine;
+      var temp = pixels[currentCell];
+      // console.log(temp)
+      pixels[currentCell] = pixels[targetCell];
+      pixels[targetCell] = temp;
+    }
+  }
+
+  // Create 2 2D cnavas to store the result
+  var canvas2d = document.createElement('canvas');
+  canvas2d.width = width;
+  canvas2d.height = height;
+  var context = canvas2d.getContext('2d');
+
+  // Copy the pixels to a 2D canvas
+  var imageData = context.createImageData(width, height);
+  imageData.data.set(pixels);
+  context.putImageData(imageData, 0, 0);
+
+  var base64 = canvas2d.toDataURL();
+  let parts = base64.split(';base64,');
+  let contentType = parts[0].split(':')[1];
+  let raw = window.atob(parts[1]);
+  let rawLength = raw.length;
+  let uInt8Array = new Uint8Array(rawLength);
+  for (let i = 0; i < rawLength; i++){
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  var blob = new Blob([uInt8Array], {type: contentType});
+
+  let dumpFBO = document.createElement('a');
+  dumpFBO.style.display = 'none';
+  // Set the downloadName as current time
+  var time = new Date();
+  dumpFBO.download = 'pic_' + time.getFullYear().toString() + (time.getMonth()+1).toString() + time.getDate().toString() + (time.getHours()+1).toString() + (time.getMinutes()+1).toString() + (time.getSeconds()+1).toString() + '.png';
+  dumpFBO.href = window.URL.createObjectURL(blob);
+  dumpFBO.click();
+}
 
 /**
  * @private
