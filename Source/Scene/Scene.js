@@ -2602,17 +2602,34 @@ function executeCommands(scene, passState) {
       }
 
       // jadd 绘制之后恢复passState原本的framebuffer内容，而后blit
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null) // READ和DRAW之前必须要接触gl.FRAMEBUFFER的绑定！！！！！
       // passState.framebuffer = originalPassStateFramebuffer
       // gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
       // gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, passState.framebuffer._framebuffer);
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, passState.framebuffer._framebuffer);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_texture);
-      gl.clearBufferfv(gl.COLOR, 0, [0.0, 0.0, 0.0, 1.0]);
+
+      console.log('bind READ/DRAW...')
+      // gl.bindFramebuffer(gl.FRAMEBUFFER, passState.framebuffer._framebuffer);
+      // gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
+      gl.clearBufferfv(gl.COLOR, 0, [0.8, 0.8, 0.8, 1.0]);
+      // gl.bindFramebuffer(gl.FRAMEBUFFER, passState.framebuffer._framebuffer);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
+      // scene.dumpFramebuffer();
+      console.log('clearBufferfv...')
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null); // 绑定dump之后解除绑定，并重新连接draw和read的buffer
+      gl.bindFramebuffer(gl.READ_FRAMEBUFFER, passState.framebuffer._framebuffer);
+      gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_texture);
+
       gl.blitFramebuffer(
           0, 0, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y,
           0, 0, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y,
           gl.COLOR_BUFFER_BIT, gl.NEAREST
       );
+      // blit之后重新将gl.FRAMEBUFFER绑定为fbo_texture，进行dump
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
+      console.log('after blitFramebuffer...')
 
       length = 0; // jadd
       if (length > 0) {
@@ -4013,6 +4030,81 @@ Scene.prototype.forceRender = function (time) {
 Scene.prototype.requestRender = function () {
   this._renderRequested = true;
 };
+
+/** jadd
+ * Automatically download the dumped framebuffer texture.
+ * 
+ * @returns download picture
+ */
+Scene.prototype.dumpFramebuffer = function () {
+  var gl = this._context._gl;
+  const width = this._canvas.width;
+  const height = this._canvas.height;
+
+  if( gl instanceof WebGL2RenderingContext ){
+    // console.log('wengl2.0');
+  }
+
+  if( gl instanceof WebGLRenderingContext ){
+    // console.log('webgl1.0');
+  }
+
+  if ( !!!width || !!!height ) {
+    console.log('Canvas width and height are undefined.');
+    return
+  }
+
+  // Read the content of the framebuffer
+  var numberOfChannelsByLine = width * 4;
+  var halfHeight = height /2;
+  var pixels = new Uint8Array( width * height * 4 )
+
+  // Reading data from WebGL
+  gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+
+  // To flip image on Y axis
+  for (var i = 0; i < halfHeight; i++){
+    for (var j = 0; j < numberOfChannelsByLine; j++){
+      var currentCell = j + i * numberOfChannelsByLine;
+      var targetLine = height - i - 1;
+      var targetCell = j + targetLine * numberOfChannelsByLine;
+      var temp = pixels[currentCell];
+      // console.log(temp)
+      pixels[currentCell] = pixels[targetCell];
+      pixels[targetCell] = temp;
+    }
+  }
+
+  // Create 2 2D cnavas to store the result
+  var canvas2d = document.createElement('canvas');
+  canvas2d.width = width;
+  canvas2d.height = height;
+  var context = canvas2d.getContext('2d');
+
+  // Copy the pixels to a 2D canvas
+  var imageData = context.createImageData(width, height);
+  imageData.data.set(pixels);
+  context.putImageData(imageData, 0, 0);
+
+  var base64 = canvas2d.toDataURL();
+  let parts = base64.split(';base64,');
+  let contentType = parts[0].split(':')[1];
+  let raw = window.atob(parts[1]);
+  let rawLength = raw.length;
+  let uInt8Array = new Uint8Array(rawLength);
+  for (let i = 0; i < rawLength; i++){
+    uInt8Array[i] = raw.charCodeAt(i);
+  }
+  var blob = new Blob([uInt8Array], {type: contentType});
+
+  let dumpFBO = document.createElement('a');
+  dumpFBO.style.display = 'none';
+  // Set the downloadName as current time
+  var time = new Date();
+  dumpFBO.download = 'pic_' + time.getFullYear().toString() + (time.getMonth()+1).toString() + time.getDate().toString() + time.getHours().toString() + time.getMinutes().toString() + time.getSeconds().toString() + '.png';
+  dumpFBO.href = window.URL.createObjectURL(blob);
+  dumpFBO.click();
+}
 
 /**
  * @private
