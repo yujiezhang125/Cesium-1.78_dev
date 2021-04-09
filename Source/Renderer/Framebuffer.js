@@ -84,6 +84,37 @@ function Framebuffer(options) {
   var maximumColorAttachments = ContextLimits.maximumColorAttachments;
 
   this._gl = gl;
+  // // jadd 设置_msaaFramebuffer
+  // if (gl instanceof WebGL2RenderingContext) {
+  //   // 预处理，设置passState的framebuffer
+  //   var FRAMEBUFFER_SIZE = {
+  //     x: context._canvas.width,
+  //     y: context._canvas.height
+  //   };
+
+  //   var fbo_renderbuffer = gl.createFramebuffer();
+
+  //   var colorRenderbuffer = gl.createRenderbuffer(); // 初始化以及绑定fboR的colorAttachment
+  //   gl.bindRenderbuffer(gl.RENDERBUFFER, colorRenderbuffer);
+  //   gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.RGBA8, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
+  //   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
+  //   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.RENDERBUFFER, colorRenderbuffer);
+  //   gl.bindRenderbuffer(gl.RENDERBUFFER, null); // 解除绑定，可以不用执行
+  //   gl.bindFramebuffer(gl.FRAMEBUFFER, null); // 解除绑定，可以不用执行
+
+  //   var depthRenderbuffer = gl.createRenderbuffer();
+  //   gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderbuffer);
+  //   gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.DEPTH_COMPONENT16, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
+  //   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
+  //   gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderbuffer);
+  //   gl.bindRenderbuffer(gl.RENDERBUFFER, null); // 解除绑定，可以不用执行
+  //   gl.bindFramebuffer(gl.FRAMEBUFFER, null); // 解除绑定，可以不用执行
+
+  //   this._framebuffer = fbo_renderbuffer
+  // } else {
+  //   this._framebuffer = gl.createFramebuffer();
+  // };
+  // jadd end
   this._framebuffer = gl.createFramebuffer();
 
   this._colorTextures = [];
