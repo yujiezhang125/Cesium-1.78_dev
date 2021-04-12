@@ -2528,9 +2528,9 @@ function executeCommands(scene, passState) {
       };
       //jadd 生成空白texture(挂在context底下._msaaFramebuffer) 用于绑定给fbo_texture，接收blit复制的数据
       // -- Delete WebGL resources
-      if (defined(scene._context._msaaFramebuffer)){
-        scene._context._msaaFramebuffer.destroy();
-      }
+      // if (defined(scene._context._msaaFramebuffer)){
+      //   scene._context._msaaFramebuffer.destroy();
+      // }
       scene._context._msaaFramebuffer = new Framebuffer({
         context: scene._context,
         colorTextures: [new Texture({
@@ -2541,23 +2541,33 @@ function executeCommands(scene, passState) {
         })]
       });
 
-      var texture = gl.createTexture();
-      gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-      gl.bindTexture(gl.TEXTURE_2D, null);
+      if (scene._context._msaaFramebuffer._colorTextures[0]._texture == undefined) {
+        var texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+        gl.bindTexture(gl.TEXTURE_2D, null);
+        scene._context._msaaFramebuffer._colorTextures[0]._texture = texture; // 将后续要做blit的空白texture先放在scene._msaaFramebuffer...里面
+      }
 
-      scene._context._msaaFramebuffer._colorTextures[0]._texture = texture; // 将后续要做blit的空白texture先放在scene._msaaFramebuffer...里面
+      // scene._context._msaaFramebuffer._colorTextures[0]._texture = texture; // 将后续要做blit的空白texture先放在scene._msaaFramebuffer...里面
 
       // -- Delete WebGL resources
       // if (defined(passState.framebuffer)){
       //   passState.framebuffer.destroy();
       // }
-      var FBOs = [
-        gl.createFramebuffer(),
-        gl.createFramebuffer()
-      ]
+      // var FBOs = [
+      //   gl.createFramebuffer(),
+      //   gl.createFramebuffer()
+      // ]
+      if(passState.FBOs==undefined){
+        passState.FBOs = [
+          gl.createFramebuffer(),
+          gl.createFramebuffer()
+        ]
+      }
+      var FBOs=passState.FBOs;
       var fbo_renderbuffer = FBOs[0]; // jadd 生成fbo，用于绑定renderbuffer，用于绘制以及被read
       // var originalPassStateFramebuffer = passState.framebuffer; // JSON.parse(JSON.stringify(passState.framebuffer)); // 保存最原先的帧缓冲区
       passState.framebuffer._framebuffer = fbo_renderbuffer; // jadd 以passState.framebuffer的_framebuffer作为fbo，用于绑定renderbuffer，用于绘制以及被read
@@ -2565,9 +2575,12 @@ function executeCommands(scene, passState) {
 
       
       // 初始化fbo_renderbuffer的colorAttachment要用的renderbuffer
-      var colorRenderbuffer = gl.createRenderbuffer();
+      if(passState.colorRenderbuffer == undefined){
+        passState.colorRenderbuffer = gl.createRenderbuffer();
+      }
+      var colorRenderbuffer = passState.colorRenderbuffer;
       gl.bindRenderbuffer(gl.RENDERBUFFER, colorRenderbuffer);
-      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.RGBA8, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
+      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 8, gl.RGBA8, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
 
       // renderbuffer已经初始化完成；附加到fbo_renderbuffer的ColorAttachment之前；初始化fbo_renderbuffer的DepthAttachment要用的texture
       // var dtExt = gl.getExtension('WEBGL_depth_texture') || gl.getExtension('WEBKIT_WEBGL_depth_texture') || gl.getExtension('MOZ_WEBGL_depth_texture');
@@ -2596,10 +2609,13 @@ function executeCommands(scene, passState) {
       // =============================fbo_renderbuffer-depth
       // 初始化fbo_renderbuffer的depthAttachment要用的renderbuffer
       // fbo_renderbuffer的depthAttachment不用texture；改用另一个renderbuffer
-      var depthRenderbuffer = gl.createRenderbuffer();
+      if(passState.depthRenderbuffer == undefined){
+        passState.depthRenderbuffer = gl.createRenderbuffer();
+      }
+      var depthRenderbuffer = passState.depthRenderbuffer;
       gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderbuffer);
       // gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
-      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.DEPTH_COMPONENT16, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
+      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 8, gl.DEPTH_COMPONENT16, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y);
       // gl.bindRenderbuffer(gl.RENDERBUFFER, null);   
 
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
@@ -2610,7 +2626,7 @@ function executeCommands(scene, passState) {
 
       // fbo_texture将空白texture附加到colorattachment
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, scene._context._msaaFramebuffer._colorTextures[0]._texture, 0);
       // gl.bindFramebuffer(gl.FRAMEBUFFER, originalPassStateFramebuffer._framebuffer);
       // gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, originalPassStateFramebuffer.getColorTexture(0)._texture, 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -2632,21 +2648,21 @@ function executeCommands(scene, passState) {
 
       // jadd 绘制之后恢复passState原本的framebuffer内容，而后blit
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null) // READ和DRAW之前必须要接触gl.FRAMEBUFFER的绑定！！！！！
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null) // READ和DRAW之前必须要解除gl.FRAMEBUFFER的绑定！！！！！
       // passState.framebuffer = originalPassStateFramebuffer
       // gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
       // gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, passState.framebuffer._framebuffer);
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, passState.framebuffer._framebuffer);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_texture);
 
-      console.log('bind READ/DRAW...')
+      // console.log('bind READ/DRAW...')
       // gl.bindFramebuffer(gl.FRAMEBUFFER, passState.framebuffer._framebuffer);
       // gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
       gl.clearBufferfv(gl.COLOR, 0, [0.8, 0.8, 0.8, 1.0]);
       // gl.bindFramebuffer(gl.FRAMEBUFFER, passState.framebuffer._framebuffer);
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
       // scene.dumpFramebuffer();
-      console.log('clearBufferfv...')
+      // console.log('clearBufferfv...')
       gl.bindFramebuffer(gl.FRAMEBUFFER, null); // 绑定dump之后解除绑定，并重新连接draw和read的buffer
       gl.bindFramebuffer(gl.READ_FRAMEBUFFER, passState.framebuffer._framebuffer);
       gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_texture);
@@ -2658,7 +2674,7 @@ function executeCommands(scene, passState) {
       );
       // blit之后重新将gl.FRAMEBUFFER绑定为fbo_texture，进行dump
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
-      console.log('after blitFramebuffer...')
+      // console.log('after blitFramebuffer...')
 
       length = 0; // jadd
       if (length > 0) {
