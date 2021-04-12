@@ -58,6 +58,11 @@ function Texture(options) {
     );
   }
 
+  // jadd
+  if (width == 0){
+    debugger
+  }
+  // jadd end
   Check.typeOf.number.greaterThan("width", width, 0);
 
   if (width > ContextLimits.maximumTextureSize) {

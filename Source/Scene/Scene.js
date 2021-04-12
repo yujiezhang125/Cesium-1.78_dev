@@ -70,6 +70,11 @@ import SunPostProcess from "./SunPostProcess.js";
 import TweenCollection from "./TweenCollection.js";
 import View from "./View.js";
 import DebugInspector from "./DebugInspector.js";
+import Texture from "../Renderer/Texture.js";
+// jadd
+import Framebuffer from "../Renderer/Framebuffer.js";
+// import Texture from "../Renderer/Texture.js";
+// jadd end
 
 var requestRenderAfterFrame = function (scene) {
   return function () {
@@ -2521,7 +2526,21 @@ function executeCommands(scene, passState) {
         x: scene._canvas.width,
         y: scene._canvas.height
       };
-      //jadd 生成空白texture，用于绑定给fbo_texture，接收blit复制的数据
+      //jadd 生成空白texture(挂在context底下._msaaFramebuffer) 用于绑定给fbo_texture，接收blit复制的数据
+      // -- Delete WebGL resources
+      if (defined(scene._context._msaaFramebuffer)){
+        scene._context._msaaFramebuffer.destroy();
+      }
+      scene._context._msaaFramebuffer = new Framebuffer({
+        context: scene._context,
+        colorTextures: [new Texture({
+          context: scene._context,
+          width: scene._canvas.width,
+          height: scene._canvas.height,
+          pixelFormat : gl.RGBA // PixelFormat.RGBA
+        })]
+      });
+
       var texture = gl.createTexture();
       gl.bindTexture(gl.TEXTURE_2D, texture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
@@ -2529,7 +2548,12 @@ function executeCommands(scene, passState) {
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       gl.bindTexture(gl.TEXTURE_2D, null);
 
-      
+      scene._context._msaaFramebuffer._colorTextures[0]._texture = texture; // 将后续要做blit的空白texture先放在scene._msaaFramebuffer...里面
+
+      // -- Delete WebGL resources
+      // if (defined(passState.framebuffer)){
+      //   passState.framebuffer.destroy();
+      // }
       var FBOs = [
         gl.createFramebuffer(),
         gl.createFramebuffer()
@@ -2593,6 +2617,11 @@ function executeCommands(scene, passState) {
 
       // 额外设置开启深度测试，不需要额外开启 默认已经设置为true
       // gl.enable(gl.DEPTH_TEST);
+
+      // 额外增加clearFramebuffer部分的命令
+      gl.clearColor(0.8, 0.8, 0.8, 0.8);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, passState.framebuffer._framebuffer);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
       // passState.framebuffer = fbo_renderbuffer; // jadd
       // jadd
