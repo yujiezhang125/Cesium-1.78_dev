@@ -2531,25 +2531,27 @@ function executeCommands(scene, passState) {
       // if (defined(scene._context._msaaFramebuffer)){
       //   scene._context._msaaFramebuffer.destroy();
       // }
-      scene._context._msaaFramebuffer = new Framebuffer({
-        context: scene._context,
-        colorTextures: [new Texture({
+      if (scene._context._msaaFramebuffer == undefined) {
+        scene._context._msaaFramebuffer = new Framebuffer({
           context: scene._context,
-          width: scene._canvas.width,
-          height: scene._canvas.height,
-          pixelFormat : gl.RGBA // PixelFormat.RGBA
-        })]
-      });
+          colorTextures: [new Texture({
+            context: scene._context,
+            width: scene._canvas.width,
+            height: scene._canvas.height,
+            pixelFormat : gl.RGBA // PixelFormat.RGBA
+          })]
+        });  
+      }
 
       if (scene._context._msaaFramebuffer._colorTextures[0]._texture == undefined) {
-        var texture = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, texture);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
-        gl.bindTexture(gl.TEXTURE_2D, null);
-        scene._context._msaaFramebuffer._colorTextures[0]._texture = texture; // 将后续要做blit的空白texture先放在scene._msaaFramebuffer...里面
+        scene._context._msaaFramebuffer._colorTextures[0]._texture = gl.createTexture(); // 将后续要做blit的空白texture先放在scene._msaaFramebuffer...里面
       }
+      var texture = scene._context._msaaFramebuffer._colorTextures[0]._texture;
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, FRAMEBUFFER_SIZE.x, FRAMEBUFFER_SIZE.y, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.bindTexture(gl.TEXTURE_2D, null);
 
       // scene._context._msaaFramebuffer._colorTextures[0]._texture = texture; // 将后续要做blit的空白texture先放在scene._msaaFramebuffer...里面
 
@@ -2676,7 +2678,7 @@ function executeCommands(scene, passState) {
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_texture);
       // console.log('after blitFramebuffer...')
 
-      length = 0; // jadd
+      // length = 0; // jadd
       if (length > 0) {
         if (defined(globeDepth) && environmentState.useGlobeDepthFramebuffer) {
           globeDepth.executeUpdateDepth(context, passState, clearGlobeDepth);
