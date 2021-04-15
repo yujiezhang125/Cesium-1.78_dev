@@ -44,6 +44,8 @@
 
         // 背景颜色
         viewer.scene.backgroundColor = new Cesium.Color(0.8, 0.8, 0.8, 0.8)
+        // 开启msaa抗锯齿
+        viewer.scene._context.msaaEnable = false;
 
         // 添加模型
         const para = {
@@ -66,6 +68,13 @@
         //   }
         // });
 
+        // 增加按钮控制
+        Sandcastle.addToggleButton(
+          'msaaEnable', 
+          viewer.scene._context.msaaEnable, 
+          function(checked){
+            viewer.scene._context.msaaEnable = checked;
+          });
 
         //Sandcastle_End
         Sandcastle.finishedLoading();
