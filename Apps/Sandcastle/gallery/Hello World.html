@@ -36,6 +36,17 @@
         "use strict";
         //Sandcastle_Begin
         var viewer = new Cesium.Viewer("cesiumContainer");
+
+        // 添加模型
+        const para = {
+          url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
+          maximumScreenSpaceError: 1
+        }
+        var tileset = viewer.scene.primitives.add(
+          new Cesium.Cesium3DTileset(para)
+        );
+
+        viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }
