@@ -180,6 +180,8 @@ function Context(canvas, options) {
 
   var glContext;
   var getWebGLStub = options.getWebGLStub;
+  // jadd
+  requestWebgl2 = true;
 
   if (!defined(getWebGLStub)) {
     if (requestWebgl2) {
