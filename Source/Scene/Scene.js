@@ -2430,7 +2430,7 @@ function executeCommands(scene, passState) {
   // ----
   var fbo_texture = FBOs[1]; // 生成fbo，用于绑定空白texture，接收blit步骤复制并绘制的数据
   // 生成空白的texture（挂在context._massFramebuffer底下）用于绑定给fbo_texture, 接收blit步骤复制的数据
-  if (!defined(scene._context._massFramebuffer)) {
+  if (!defined(scene._context._msaaFramebuffer)) {
     scene._context._msaaFramebuffer = new Framebuffer({
       context: scene._context,
       colorTextures: [new Texture({
