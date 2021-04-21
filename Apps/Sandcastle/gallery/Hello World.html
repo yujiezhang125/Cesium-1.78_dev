@@ -37,6 +37,8 @@
         //Sandcastle_Begin
         var viewer = new Cesium.Viewer("cesiumContainer");
 
+        // 开启msaa抗锯齿
+        viewer.scene._context.msaaEnable = false;
         // 添加模型
         const para = {
           url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
@@ -47,6 +49,14 @@
         );
 
         viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+        // msaaEnable按钮控制
+        Sandcastle.addToggleButton(
+          'msaaEnable',
+          viewer.scene._context.msaaEnable,
+          function(checked){
+            viewer.scene._context.msaaEnable = checked;
+          }
+        );
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }
