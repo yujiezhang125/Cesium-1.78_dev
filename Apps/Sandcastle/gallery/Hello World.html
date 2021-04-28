@@ -35,7 +35,11 @@
       function startup(Cesium) {
         "use strict";
         //Sandcastle_Begin
-        var viewer = new Cesium.Viewer("cesiumContainer");
+        var viewer = new Cesium.Viewer("cesiumContainer", {
+          contextOptions: {
+            requestWebgl2: true,
+          }
+        });
 
         // 开启msaa抗锯齿
         viewer.scene._context.msaaEnable = false;
@@ -47,8 +51,23 @@
         var tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset(para)
         );
-
         viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+
+        // // test大连路模型
+        // const para = {
+        //   url: 'http://sd.suog.cn:11000/bim/1964255432/3dtiles/tileset.json',
+        //   maximumScreenSpaceError: 1
+        // }
+        // var tileset = viewer.scene.primitives.add(
+        //   new Cesium.Cesium3DTileset(para)
+        // );
+        // tileset.readyPromise.then(function(tileset){
+        //   // console.log(tileset._root.transform)
+        //   // console.log(Cesium.Matrix4.fromColumnMajorArray([-0.8529396849773754,-0.5220094767249879,0,0,0.2706913747269522,-0.4422973646651561,0.8550434029092855,0,-0.4463407593298291,0.7293004507194291,0.5185564377590055,0,-2849386.9515728555,4655768.366698808,3288242.257568227,1]))
+        //   tileset._root.transform = Cesium.Matrix4.fromColumnMajorArray([-0.8529396849773754,-0.5220094767249879, 0,0, 0.2706913747269522, -0.4422973646651561,0.8550434029092855,0,-0.4463407593298291,0.7293004507194291, 0.5185564377590055,0,-2849392.7540027215,4655777.847604658,3288248.998801933, 1]);
+        // })
+        // viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+        
         // msaaEnable按钮控制
         Sandcastle.addToggleButton(
           'msaaEnable',

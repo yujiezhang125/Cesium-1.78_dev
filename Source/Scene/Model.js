@@ -252,6 +252,14 @@ function Model(options) {
       if (gltf instanceof Uint8Array) {
         // Binary glTF
         var parsedGltf = parseGlb(gltf);
+        // jadd
+        if (defined(parsedGltf) && defined(parsedGltf.materials)){
+          for (let i = 0; i < parsedGltf.materials.length; ++i){
+            if (defined(parsedGltf.materials[i]) && defined(parsedGltf.materials[i].doubleSided)){
+              parsedGltf.materials[i].doubleSided = true;
+            };
+          }
+        };
 
         cachedGltf = new CachedGltf({
           gltf: parsedGltf,
