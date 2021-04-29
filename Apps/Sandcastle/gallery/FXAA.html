@@ -61,6 +61,15 @@
         Sandcastle.addToggleButton("FXAA", true, function (checked) {
           viewer.scene.postProcessStages.fxaa.enabled = checked;
         });
+
+        // msaaEnable按钮控制
+        Sandcastle.addToggleButton(
+          'msaaEnable',
+          viewer.scene._context.msaaEnable,
+          function(checked){
+            viewer.scene._context.msaaEnable = checked;
+          }
+        );
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }

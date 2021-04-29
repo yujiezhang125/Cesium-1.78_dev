@@ -45,13 +45,23 @@
         viewer.scene._context.msaaEnable = false;
         // 添加模型
         const para = {
-          url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
-          maximumScreenSpaceError: 1
+          // url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
+          url: 'https://mapinner-test.wz-inc.com/shangyu/road3D/road/tileset_road.json', // mapinner-test 十字路口模型
+          maximumScreenSpaceError: 0
         }
         var tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset(para)
         );
         viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+
+        // 添加other模型
+        const para2 = {
+          url: 'https://mapinner-test.wz-inc.com/shangyu/road3D/tileset_other.json', // mapinner-test
+          maximumScreenSpaceError: 1
+        }
+        viewer.scene.primitives.add(
+          new Cesium.Cesium3DTileset(para2)
+        );
 
         // // test大连路模型
         // const para = {
