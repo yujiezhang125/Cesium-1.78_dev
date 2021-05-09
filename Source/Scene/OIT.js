@@ -219,6 +219,7 @@ OIT.prototype.update = function (context, passState, framebuffer, useHDR) {
   // jadd
   if (defined(context.msaaEnable) && context.msaaEnable && defined(context._msaaFramebuffer)){
     this._opaqueTexture = context._msaaFramebuffer.getColorTexture(0);
+    // this._depthStencilTexture = context._msaaFramebuffer.depthStencilTexture;
   };
   // jadd end
 

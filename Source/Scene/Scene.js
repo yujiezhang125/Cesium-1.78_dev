@@ -74,6 +74,8 @@ import DebugInspector from "./DebugInspector.js";
 import Texture from "../Renderer/Texture.js";
 import Framebuffer from "../Renderer/Framebuffer.js";
 import PixelFormat from "../Core/PixelFormat.js";
+import PixelDatatype from "../Renderer/PixelDatatype.js";
+import WebGLConstants from "../Core/WebGLConstants.js";
 // jadd end
 
 var requestRenderAfterFrame = function (scene) {
@@ -2326,15 +2328,16 @@ function executeCommands(scene, passState) {
       };
       var depthRenderbuffer = passState.msaaDepthRenderbuffer;
       gl.bindRenderbuffer(gl.RENDERBUFFER, depthRenderbuffer);
-      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, gl.DEPTH_COMPONENT16, scene._canvas.width, scene._canvas.height);
+      gl.renderbufferStorageMultisample(gl.RENDERBUFFER, 4, WebGLConstants.DEPTH24_STENCIL8, scene._canvas.width, scene._canvas.height);
       // depthRenderbuffer初始化完成，绑定至fbo_renderbuffer的depthAttachment
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
       gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depthRenderbuffer);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     
       // ----
-      var fbo_colorTexture = FBOs[1]; // 生成fbo，用于绑定空白texture，接收blit步骤复制并绘制的数据
-      // 生成空白的texture（挂在context._massFramebuffer底下）用于绑定给fbo_colorTexture, 接收blit步骤复制的数据
+      var fbo_colorTexture = FBOs[1]; // 生成fbo，用于绑定空白colorTexture，接收blit步骤复制并绘制的数据
+      var fbo_depthTexture = FBOs[2]; // 生成fbo，用于绑定空白depthTexture，接收blit步骤复制的深度信息
+      // 生成空白的colorTexture和depthTexture（挂在context._massFramebuffer底下）用于绑定给fbo_colorTexture和fbo_depthTexture, 接收blit步骤复制的数据
       if (!defined(scene._context._msaaFramebuffer)) {
         scene._context._msaaFramebuffer = new Framebuffer({
           context: scene._context,
@@ -2344,29 +2347,45 @@ function executeCommands(scene, passState) {
             height: scene._canvas.height,
             pixelFormat: gl.RGBA
           })],
-          // depthTexture: new Texture({
-          //   context: context,
-          //   width: scene._canvas.width,
-          //   height: scene._canvas.height,
-          //   pixelFormat: PixelFormat.DEPTH_STENCIL,
-          //   pixelDatatype: PixelDatatype.UNSIGNED_INT_24_8
-          // })
+          depthStencilTexture: new Texture({
+            context: context,
+            width: scene._canvas.width,
+            height: scene._canvas.height,
+            pixelFormat: PixelFormat.DEPTH_STENCIL,
+            pixelDatatype: PixelDatatype.UNSIGNED_INT_24_8
+          })
         })
       };
     
       if (!defined(scene._context._msaaFramebuffer._colorTextures[0]._texture)) {
         scene._context._msaaFramebuffer._colorTextures[0]._texture = gl.createTexture();
       };
-      var texture = scene._context._msaaFramebuffer._colorTextures[0]._texture;
-      gl.bindTexture(gl.TEXTURE_2D, texture);
+      if (!defined(scene._context._msaaFramebuffer._depthStencilTexture._texture)) {
+        scene._context._msaaFramebuffer._depthStencilTexture._texture = gl.createTexture();
+      };
+
+      // colorTexture处理
+      var colorTexture = scene._context._msaaFramebuffer._colorTextures[0]._texture;
+      gl.bindTexture(gl.TEXTURE_2D, colorTexture);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, scene._canvas.width, scene._canvas.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
       gl.bindTexture(gl.TEXTURE_2D, null);
-    
-      // 将空白texture附加到fbo_colorTexture的colorAttachment
+      // 将空白colorTexture附加到fbo_colorTexture的colorAttachment
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_colorTexture);
-      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, colorTexture, 0);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+
+      // depthTexture处理
+      var depthTexture = scene._context._msaaFramebuffer._depthStencilTexture._texture;
+      gl.bindTexture(gl.TEXTURE_2D, depthTexture);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+      gl.texImage2D(gl.TEXTURE_2D, 0, WebGLConstants.DEPTH24_STENCIL8, scene._canvas.width, scene._canvas.height, 0, PixelFormat.DEPTH_STENCIL, WebGLConstants.UNSIGNED_INT_24_8, null);
+      gl.bindTexture(gl.TEXTURE_2D, null);
+      // 将空白的depthTexture附加到fbo_depthTexture的depthAttachment
+      gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_depthTexture);
+      gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTexture, 0);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     
       // ---两个fbo处理步骤已完成
@@ -2382,6 +2401,18 @@ function executeCommands(scene, passState) {
         passState.framebuffer._framebuffer = passState.framebuffer._originalFramebuffer;
         passState.framebuffer._originalFramebuffer = undefined;
       };
+      if (defined(scene._context._msaaFramebuffer)){
+        scene._context._msaaFramebuffer = undefined;
+      }
+      if (defined(passState.msaaFBOs)){
+        passState.FBOs = undefined;
+      }
+      if (defined(passState.msaaColorRenderbuffer)){
+        passState.msaaColorRenderbuffer = undefined;
+      }
+      if (defined(passState.msaaDepthRenderbuffer)){
+        passState.msaaDepthRenderbuffer = undefined;
+      }
     };
     // jadd end
   
@@ -2849,6 +2880,7 @@ function executeCommands(scene, passState) {
   // jadd after executeCommand
   if(defined(scene._context.msaaEnable) && scene._context.msaaEnable){
     // 绘制之后执行blit步骤
+    // blit fbo_renderbuffer的colorAttachment
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
     gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_colorTexture);
@@ -2856,6 +2888,14 @@ function executeCommands(scene, passState) {
       0, 0, scene._canvas.width, scene._canvas.height,
       0, 0, scene._canvas.width, scene._canvas.height,
       gl.COLOR_BUFFER_BIT, gl.NEAREST
+    );
+    // blit fbo_renderbuffer的depthAttachment
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_depthTexture);
+    gl.blitFramebuffer(
+      0, 0, scene._canvas.width, scene._canvas.height,
+      0, 0, scene._canvas.width, scene._canvas.height,
+      gl.DEPTH_BUFFER_BIT, gl.NEAREST
     );
 
     // blit之后解除绑定
