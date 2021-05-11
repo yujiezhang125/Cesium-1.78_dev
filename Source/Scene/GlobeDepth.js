@@ -172,29 +172,12 @@ function createUpdateDepthResources(
     colorTextures: [globeDepth._tempGlobeDepthTexture],
     destroyAttachments: false,
   });
-  // jadd init resources
-  // if (defined(context.msaaEnable) && context.msaaEnable && defined(context._msaaFramebuffer)){
-  //   globeDepth._updateDepthFramebuffer = new Framebuffer({
-  //     context: context,
-  //     colorTextures: [globeDepth._globeDepthTexture],
-  //     depthStencilTexture: context._msaaFramebuffer.depthStencilTexture,
-  //     destroyAttachments: false,
-  //   });
-  // } else {
-  //   globeDepth._updateDepthFramebuffer = new Framebuffer({
-  //     context: context,
-  //     colorTextures: [globeDepth._globeDepthTexture],
-  //     depthStencilTexture: passState.framebuffer.depthStencilTexture,
-  //     destroyAttachments: false,
-  //   });
-  // }
   globeDepth._updateDepthFramebuffer = new Framebuffer({
     context: context,
     colorTextures: [globeDepth._globeDepthTexture],
     depthStencilTexture: passState.framebuffer.depthStencilTexture,
     destroyAttachments: false,
   });
-  // jadd end
 }
 
 function createTextures(globeDepth, context, width, height, hdr) {
@@ -520,11 +503,6 @@ GlobeDepth.prototype.executeUpdateDepth = function (
   clearGlobeDepth
 ) {
   var depthTextureToCopy = passState.framebuffer.depthStencilTexture;
-  // // jadd
-  // if (defined(context._msaaFramebuffer) && defined(context._msaaFramebuffer.depthStencilTexture)){
-  //   depthTextureToCopy = context._msaaFramebuffer._depthStencilTexture;
-  // }
-  // // jadd end
   if (clearGlobeDepth || depthTextureToCopy !== this._depthStencilTexture) {
     // First copy the depth to a temporary globe depth texture, then update the
     // main globe depth texture where the stencil bit for 3D Tiles is set.

@@ -37,15 +37,15 @@
       // 开启msaa抗锯齿
       viewer.scene._context.msaaEnable = false;
       // 添加模型
-      // const para = {
-      //   // url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
-      //   url: 'https://mapinner-test.wz-inc.com/shangyu/road3D/road/tileset_road.json', // mapinner-test 十字路口模型
-      //   maximumScreenSpaceError: 0
-      // }
-      // var tileset = viewer.scene.primitives.add(
-      //   new Cesium.Cesium3DTileset(para)
-      // );
-      // viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+      const para = {
+        // url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
+        url: 'https://mapinner-test.wz-inc.com/shangyu/road3D/road/tileset_road.json', // mapinner-test 十字路口模型
+        maximumScreenSpaceError: 8
+      }
+      var tileset = viewer.scene.primitives.add(
+        new Cesium.Cesium3DTileset(para)
+      );
+      viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
 
       // 添加other模型
       const para2 = {
@@ -55,7 +55,7 @@
       var tileset2 = viewer.scene.primitives.add(
         new Cesium.Cesium3DTileset(para2)
       );
-      viewer.zoomTo(tileset2, {heading: 0, pitch: -0.7, range: 4000});
+      // viewer.zoomTo(tileset2, {heading: 0, pitch: -0.7, range: 4000});
       
       // 添加测试自由女神模型
       // viewer.scene.camera.setView({

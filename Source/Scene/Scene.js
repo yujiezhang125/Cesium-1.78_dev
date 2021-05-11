@@ -2355,6 +2355,28 @@ function executeCommands(scene, passState) {
             pixelDatatype: PixelDatatype.UNSIGNED_INT_24_8
           })
         })
+      } else if(scene._context._msaaFramebuffer.getColorTexture(0).height !== scene._canvas.height || 
+      scene._context._msaaFramebuffer.getColorTexture(0).width !== scene._canvas.width){
+        scene._context._msaaFramebuffer = 
+          scene._context._msaaFramebuffer && 
+          !scene._context._msaaFramebuffer.isDestroyed() && 
+          scene._context._msaaFramebuffer.destroy;
+        scene._context._msaaFramebuffer = new Framebuffer({
+          context: scene._context,
+          colorTextures: [new Texture({
+            context: scene._context,
+            width: scene._canvas.width,
+            height: scene._canvas.height,
+            pixelFormat: gl.RGBA
+          })],
+          depthStencilTexture: new Texture({
+            context: context,
+            width: scene._canvas.width,
+            height: scene._canvas.height,
+            pixelFormat: PixelFormat.DEPTH_STENCIL,
+            pixelDatatype: PixelDatatype.UNSIGNED_INT_24_8
+          })
+        })
       };
     
       if (!defined(scene._context._msaaFramebuffer._colorTextures[0]._texture)) {

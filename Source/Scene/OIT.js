@@ -213,14 +213,19 @@ OIT.prototype.update = function (context, passState, framebuffer, useHDR) {
     return;
   }
 
-  this._opaqueFBO = framebuffer;
-  this._opaqueTexture = framebuffer.getColorTexture(0);
-  this._depthStencilTexture = framebuffer.depthStencilTexture;
+  // this._opaqueFBO = framebuffer;
+  // this._opaqueTexture = framebuffer.getColorTexture(0);
+  // this._depthStencilTexture = framebuffer.depthStencilTexture;
   // jadd
   if (defined(context.msaaEnable) && context.msaaEnable && defined(context._msaaFramebuffer)){
+    this._opaqueFBO = context._msaaFramebuffer;
     this._opaqueTexture = context._msaaFramebuffer.getColorTexture(0);
-    // this._depthStencilTexture = context._msaaFramebuffer.depthStencilTexture;
-  };
+    this._depthStencilTexture = context._msaaFramebuffer.depthStencilTexture;
+  } else {
+    this._opaqueFBO = framebuffer;
+    this._opaqueTexture = framebuffer.getColorTexture(0);
+    this._depthStencilTexture = framebuffer.depthStencilTexture;
+  }
   // jadd end
 
   var width = this._opaqueTexture.width;
