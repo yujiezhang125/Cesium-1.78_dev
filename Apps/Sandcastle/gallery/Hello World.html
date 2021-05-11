@@ -37,6 +37,9 @@
         //Sandcastle_Begin
         // var viewer = new Cesium.Viewer("cesiumContainer");
         var viewer = new Cesium.Viewer('cesiumContainer', {
+          contextOptions: {
+            requestWebgl2: true,
+          },
           skyBox: false,
           skyAtmosphere: false,
           globe: false,
@@ -51,22 +54,23 @@
         const para = {
           // url: 'http://192.168.99.21:8000/model/hxl/3dtiles/tileset.json', // hxl泵站模型
           url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json', // 分级灰色正方体
-          // url: 'http://192.168.99.21:8000/model/zzzcubic/Batchedbox-24-red-100/tileset.json', // 一个红色正方体
+          // url: 'https://mapinner-test.wz-inc.com/shangyu/road3D/road/tileset_road.json', // mapinner-test 十字路口模型
           maximumScreenSpaceError: 1
         }
         var tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset(para)
         );
-
         viewer.zoomTo(tileset, {heading:0, pitch: -0.7, range: 4000})
-        // viewer.camera.setView({
-        //   destination: new Cesium.Cartesian3(-2804123.3513171314,4714533.952022907,3243468.3646999802),
-        //   orientation: {
-        //     heading: 0.03590017414382274,
-        //     pitch: -0.44771154322740125,
-        //     roll: 0.00011752684810684144,
-        //   }
-        // });
+
+        // 添加others模型
+        // const para2 = {
+        //   url: 'https://mapinner-test.wz-inc.com/shangyu/road3D/tileset_other.json', // mapinner-test
+        //   maximumScreenSpaceError: 2
+        // }
+        // var tileset2 = viewer.scene.primitives.add(
+        //   new Cesium.Cesium3DTileset(para2)
+        // );
+        // viewer.zoomTo(tileset2, {heading:0, pitch: -0.7, range: 4000})
 
         // 增加按钮控制
         Sandcastle.addToggleButton(

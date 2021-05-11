@@ -2596,11 +2596,36 @@ function executeCommands(scene, passState) {
         // gl.bindFramebuffer(gl.FRAMEBUFFER, passState.framebuffer._framebuffer);
         gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-        // jadd end
-        for (j = 0; j < length; ++j) {
-          executeCommand(commands[j], scene, context, passState);
+      } else {
+        if (defined(passState.framebuffer._originalFramebuffer)){
+          passState.framebuffer._framebuffer = passState.framebuffer._originalFramebuffer;
+          passState.framebuffer._originalFramebuffer = undefined;
+        };
+        if (defined(scene._context._msaaFramebuffer)){
+          scene._context._msaaFramebuffer = undefined;
         }
-        // jadd after executeCommand
+        if (defined(passState.msaaFBOs)){
+          passState.msaaFBOs = undefined;
+        }
+        if (defined(passState.msaaColorRenderbuffer)){
+          passState.msaaColorRenderbuffer = undefined;
+        }
+        if (defined(passState.msaaDepthRenderbuffer)){
+          passState.msaaDepthRenderbuffer = undefined;
+        }
+      };
+      // jadd end
+
+      // Draw 3D Tiles
+      us.updatePass(Pass.CESIUM_3D_TILE);
+      commands = frustumCommands.commands[Pass.CESIUM_3D_TILE];
+      length = frustumCommands.indices[Pass.CESIUM_3D_TILE];
+      for (j = 0; j < length; ++j) {
+        executeCommand(commands[j], scene, context, passState);
+      }
+      
+      // jadd after executeCommand
+      if(defined(scene._context.msaaEnable) && scene._context.msaaEnable){
         // 绘制之后执行blit步骤
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
@@ -2616,32 +2641,7 @@ function executeCommands(scene, passState) {
         gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
         gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
         //jadd end
-
-      } else {
-        // Draw 3D Tiles
-        us.updatePass(Pass.CESIUM_3D_TILE);
-        commands = frustumCommands.commands[Pass.CESIUM_3D_TILE];
-        length = frustumCommands.indices[Pass.CESIUM_3D_TILE];
-        if (defined(passState.framebuffer._originalFramebuffer)){
-          // -- Delete webgl resource
-          // gl.deleteTexture(texture);
-          // gl.deleteRenderbuffer(colorRenderbuffer);
-          // gl.deleteRenderbuffer(depthRenderbuffer);
-          // gl.deleteFramebuffer(FBOs[0]);
-          // gl.deleteFramebuffer(FBOs[1]);
-          // set some attribute as undefined
-          // passState.msaaColorRenderbuffer = undefined;
-          // passState.msaaDepthRenderbuffer = undefined;
-          scene._context._msaaFramebuffer.destroy();
-
-          passState.framebuffer._framebuffer = passState.framebuffer._originalFramebuffer;
-          passState.framebuffer._originalFramebuffer = undefined;
-        };
-        for (j = 0; j < length; ++j){
-          executeCommand(commands[j], scene, context, passState);
-        };
-      };
-      // jadd end
+      }
 
       if (length > 0) {
         if (defined(globeDepth) && environmentState.useGlobeDepthFramebuffer) {
