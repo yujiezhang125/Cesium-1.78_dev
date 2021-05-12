@@ -3885,7 +3885,11 @@ function postPassesUpdate(scene) {
   var primitives = scene.primitives;
   primitives.postPassesUpdate(frameState);
 
-  RequestScheduler.update();
+  // jadd
+  if(!defined(scene.stopUpdateRequestScheduler) || !scene.stopUpdateRequestScheduler){
+    RequestScheduler.update();
+  }
+  // jadd end
 }
 
 var scratchBackgroundColor = new Color();

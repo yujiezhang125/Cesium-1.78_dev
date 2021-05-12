@@ -101,6 +101,15 @@
           viewer.scene._context.msaaEnable = checked;
         }
       );
+      // 暂停发送请求
+      viewer.scene.stopUpdateRequestScheduler = false;
+      Sandcastle.addToggleButton(
+        'stopUpdateRequestScheduler',
+        false,
+        function (checked) {
+          viewer.scene.stopUpdateRequestScheduler = checked;
+        }
+      );
       //Sandcastle_End
       Sandcastle.finishedLoading();
     }
