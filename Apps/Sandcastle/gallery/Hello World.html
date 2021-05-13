@@ -39,14 +39,14 @@
 
         // 添加模型
         const para = {
-          url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
-          maximumScreenSpaceError: 1
+          url: '../../SampleData/Cesium3DTiles/Tilesets/Tileset_test/tileset.json',
+          // maximumScreenSpaceError: 1
         }
         var tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset(para)
         );
 
-        viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+        viewer.zoomTo(tileset, {heading: 0, pitch: -0.5, range: 800});
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }
