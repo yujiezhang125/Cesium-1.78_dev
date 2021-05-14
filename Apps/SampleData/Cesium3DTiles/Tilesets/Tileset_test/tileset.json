@@ -36,8 +36,8 @@
         88
       ]
     },
-    "geometricError": 70,
-    "refine": "ADD",
+    "geometricError": 10,
+    "refine": "REPLACE",
     "content": {
       "uri": "parent.b3dm",
       "boundingVolume": {
