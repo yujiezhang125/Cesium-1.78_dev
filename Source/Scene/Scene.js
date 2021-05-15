@@ -2672,6 +2672,44 @@ function executeCommands(scene, passState) {
         executeCommand(commands[j], scene, context, passState);
       }
 
+      // jadd
+      if(defined(scene._context.msaaEnable) && scene._context.msaaEnable){
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, fbo_renderbuffer);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, fbo_depthTexture);
+        gl.blitFramebuffer(
+          0, 0, scene._canvas.width, scene._canvas.height,
+          0, 0, scene._canvas.width, scene._canvas.height,
+          gl.DEPTH_BUFFER_BIT, gl.NEAREST
+        );
+    
+        // blit之后解除绑定
+        gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+        gl.bindFramebuffer(gl.READ_FRAMEBUFFER, null);
+        gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, null);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo_renderbuffer);
+
+        if (!defined(passState.framebuffer._originalDepthStencilTexture)){
+          passState.framebuffer._originalDepthStencilTexture = passState.framebuffer.depthStencilTexture._texture;
+        }
+        passState.framebuffer.depthStencilTexture._texture = scene._context._msaaFramebuffer.depthStencilTexture._texture;
+
+        if (!defined(passState.fbState) || passState.fbState != 'msaa'){
+          passState.fbState = 'msaa';
+          passState.resize = true;
+        }
+      } else {
+        if (defined(passState.framebuffer._originalDepthStencilTexture)){
+          passState.framebuffer.depthStencilTexture._texture = passState.framebuffer._originalDepthStencilTexture;
+          passState.framebuffer._originalDepthStencilTexture = undefined;
+        }
+        if (defined(passState.fbState) && passState.fbState != 'normal'){
+          passState.fbState = 'normal';
+          passState.resize = true;
+        }
+      }
+      // jadd end
+
       if (length > 0) {
         if (defined(globeDepth) && environmentState.useGlobeDepthFramebuffer) {
           globeDepth.executeUpdateDepth(context, passState, clearGlobeDepth);

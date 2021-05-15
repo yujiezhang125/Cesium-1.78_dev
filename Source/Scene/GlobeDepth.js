@@ -503,18 +503,18 @@ GlobeDepth.prototype.executeUpdateDepth = function (
   clearGlobeDepth
 ) {
   var depthTextureToCopy = passState.framebuffer.depthStencilTexture;
-  if (clearGlobeDepth || depthTextureToCopy !== this._depthStencilTexture) {
+  if (clearGlobeDepth || depthTextureToCopy !== this._depthStencilTexture || passState.resize) {
     // First copy the depth to a temporary globe depth texture, then update the
     // main globe depth texture where the stencil bit for 3D Tiles is set.
     // This preserves the original globe depth except where 3D Tiles is rendered.
     // The additional texture and framebuffer resources are created on demand.
-    if (defined(this._updateDepthCommand)) {
+    if (defined(this._updateDepthCommand || passState.resize)) {
       if (
         !defined(this._updateDepthFramebuffer) ||
         this._updateDepthFramebuffer.depthStencilTexture !==
           depthTextureToCopy ||
         this._updateDepthFramebuffer.getColorTexture(0) !==
-          this._globeDepthTexture
+          this._globeDepthTexture  || passState.resize
       ) {
         var width = this._globeDepthTexture.width;
         var height = this._globeDepthTexture.height;

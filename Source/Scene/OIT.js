@@ -236,9 +236,11 @@ OIT.prototype.update = function (context, passState, framebuffer, useHDR) {
     !defined(accumulationTexture) ||
     accumulationTexture.width !== width ||
     accumulationTexture.height !== height ||
-    useHDR !== this._useHDR;
+    useHDR !== this._useHDR || 
+    passState.resize;
   if (textureChanged) {
     updateTextures(this, context, width, height);
+    passState.resize = false;
   }
 
   if (!defined(this._translucentFBO) || textureChanged) {
