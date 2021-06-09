@@ -260,6 +260,7 @@ function Model(options) {
             };
           }
         };
+        // jadd end
 
         cachedGltf = new CachedGltf({
           gltf: parsedGltf,
