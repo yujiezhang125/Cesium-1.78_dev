@@ -1009,7 +1009,17 @@ Cesium3DTile.prototype.requestContent = function () {
           arrayBuffer,
           0
         );
-      } else {
+      } else if (magic == "\u0000\u0000\u0000\u0000") { // jadd
+        // debugger;
+        contentFactory = Cesium3DTileContentFactory['b3dm'];
+        content = contentFactory(
+          tileset,
+          that,
+          that._contentResource,
+          arrayBuffer,
+          123.456
+        )
+      }else { // jadd end
         // The content may be json instead
         content = Cesium3DTileContentFactory.json(
           tileset,
