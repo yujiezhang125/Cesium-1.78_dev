@@ -27,7 +27,7 @@
     <script src="../../../Source/ThirdParty/array-buffer-reader.js"></script>
     <script src="../../../Source/ThirdParty/ogl-parser.js"></script>
     <script src="../../../Source/ThirdParty/GridTree.js"></script>
-    
+
   </head>
   <body
     class="sandcastle-loading"
@@ -56,6 +56,10 @@
         );
 
         viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+
+        // 添加Manifest文件
+        new Cesium.BimrunManifest();
+        
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }
