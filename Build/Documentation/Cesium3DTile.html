@@ -58,11 +58,7 @@
 
 
 <div class="description">
-    A tile in a <a href="Cesium3DTileset.html"><code>Cesium3DTileset</code></a>.  When a tile is first created, its content is not loaded;
-the content is loaded on-demand when needed based on the view.
-<p>
-Do not construct this directly, instead access tiles through <a href="Cesium3DTileset.html#tileVisible"><code>Cesium3DTileset#tileVisible</code></a>.
-</p>
+    A tile in a <a href="Cesium3DTileset.html"><code>Cesium3DTileset</code></a>.  When a tile is first created, its content is not loaded;the content is loaded on-demand when needed based on the view.<p>Do not construct this directly, instead access tiles through <a href="Cesium3DTileset.html#tileVisible"><code>Cesium3DTileset#tileVisible</code></a>.</p>
 </div>
 
 
@@ -338,8 +334,7 @@ Do not construct this directly, instead access tiles through <a href="Cesium3DTi
 
 
 <div class="description">
-    The tile's content.  This represents the actual tile's payload,
-not the content's metadata in the tileset JSON file.
+    The tile's content.  This represents the actual tile's payload,not the content's metadata in the tileset JSON file.
 </div>
 
 
@@ -519,8 +514,7 @@ not the content's metadata in the tileset JSON file.
 
 
 <div class="description">
-    Returns the <code>extras</code> property in the tileset JSON for this tile, which contains application specific metadata.
-Returns <code>undefined</code> if <code>extras</code> does not exist.
+    Returns the <code>extras</code> property in the tileset JSON for this tile, which contains application specific metadata.Returns <code>undefined</code> if <code>extras</code> does not exist.
 </div>
 
 
@@ -585,8 +579,7 @@ Returns <code>undefined</code> if <code>extras</code> does not exist.
 
 
 <div class="description">
-    The error, in meters, introduced if this tile is rendered and its children are not.
-This is used to compute screen space error, i.e., the error measured in pixels.
+    The error, in meters, introduced if this tile is rendered and its children are not.This is used to compute screen space error, i.e., the error measured in pixels.
 </div>
 
 
@@ -646,12 +639,7 @@ This is used to compute screen space error, i.e., the error measured in pixels.
 
 
 <div class="description">
-    This tile's parent or <code>undefined</code> if this tile is the root.
-<p>
-When a tile's content points to an external tileset JSON file, the external tileset's
-root tile's parent is not <code>undefined</code>; instead, the parent references
-the tile (with its content pointing to an external tileset JSON file) as if the two tilesets were merged.
-</p>
+    This tile's parent or <code>undefined</code> if this tile is the root.<p>When a tile's content points to an external tileset JSON file, the external tileset'sroot tile's parent is not <code>undefined</code>; instead, the parent referencesthe tile (with its content pointing to an external tileset JSON file) as if the two tilesets were merged.</p>
 </div>
 
 

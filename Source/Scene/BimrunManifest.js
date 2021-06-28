@@ -1,5 +1,5 @@
-import Cartesian2 from "../Core/Cartesian2";
-import Cartesian3 from "../Core/Cartesian3";
+import Cartesian2 from "../Core/Cartesian2.js";
+import Cartesian3 from "../Core/Cartesian3.js";
 
 function BimrunManifest(){
     console.log('manifest')
