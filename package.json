@@ -116,7 +116,7 @@
     "makeZipFile": "gulp makeZipFile",
     "minify": "gulp minify",
     "minifyRelease": "gulp minifyRelease",
-    "release": "gulp release",
+    "release": "gulp -f gulpfile.cjs release",
     "build-specs": "gulp build-specs",
     "test": "gulp test",
     "test-all": "gulp test --all",

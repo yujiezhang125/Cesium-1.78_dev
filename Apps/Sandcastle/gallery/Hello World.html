@@ -40,6 +40,8 @@
         // 添加模型
         const para = {
           url: 'http://192.168.99.21:8000/model/zzzcubic/tileset.json',
+          // url: 'http://192.168.99.21:8000/model/zzzcubic_ogl/tileset.json', // ogl替换b3dm
+          // url: 'http://bimrun.com/bim/webgl/manifest?1=1&sceneId=101534881', // 红房子manifest
           maximumScreenSpaceError: 1
         }
         var tileset = viewer.scene.primitives.add(
@@ -47,6 +49,14 @@
         );
 
         viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+
+        // 添加BimrunManifest模型
+        new Cesium.BimrunManifest();
+        // viewer.scene.primitives.add(
+        //   new Cesium.BimrunManifest({
+        //     url: 'http://bimrun.com/bim/webgl/manifest?1=1&sceneId=101534881', // 红房子manifest
+        //   })
+        // );
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }
