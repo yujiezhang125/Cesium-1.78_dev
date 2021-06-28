@@ -654,4 +654,4 @@ var gallery_demos = [{
   "isNew": false,
   "img": "Z-Indexing Geometry.jpg"
 }];
-var has_new_gallery_demos = true;
+var has_new_gallery_demos = false;
