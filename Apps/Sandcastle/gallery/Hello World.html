@@ -49,14 +49,28 @@
         );
 
         viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+        tileset.readyPromise.then(function(tileset){
+          viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+        });
 
         // 添加BimrunManifest模型
-        new Cesium.BimrunManifest();
+        const options = {
+          url: 'http://bimrun.com/bim/webgl/manifest?1=1&sceneId=101534881', // 红房子manifest
+          // url: 'http://192.168.99.21:8000/model/zzzRedHouse/manifest.json',
+          addedTileset: tileset,
+        }
+        // new Cesium.BimrunManifest(options);
         // viewer.scene.primitives.add(
         //   new Cesium.BimrunManifest({
         //     url: 'http://bimrun.com/bim/webgl/manifest?1=1&sceneId=101534881', // 红房子manifest
         //   })
         // );
+        viewer.scene.primitives.add(
+          new Cesium.Cesium3DTileset({
+            brTileset: true,
+            url: 'http://bimrun.com/bim/webgl/manifest?1=1&sceneId=101534881',
+          })
+        )
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }

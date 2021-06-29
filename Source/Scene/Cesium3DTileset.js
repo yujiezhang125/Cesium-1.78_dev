@@ -900,7 +900,161 @@ function Cesium3DTileset(options) {
 
   var that = this;
   var resource;
-  when(options.url)
+  if (defined(options.brTileset)){
+    console.log('manifestTileset');
+    when(options.url)
+    .then(function (url) {
+      var basePath;
+      resource = Resource.createIfNeeded(url);
+      that._resource = resource;
+
+      // ion resources have a credits property we can use for additional attribution.
+      that._credits = resource.credits;
+
+      if (resource.extension === "json") {
+        basePath = resource.getBaseUri(true);
+      } else if (resource.isDataUri) {
+        basePath = "";
+      }
+
+      that._url = resource.url;
+      that._basePath = basePath;
+
+      return Cesium3DTileset.loadJson(resource);
+    })
+      .then(function (tilesetJson) {
+        console.log('thenthenthen')
+        // console.log(json);
+        var brjson = {
+          asset: {
+            generatetool: "@yujiezhang125",
+            gltfUpAxis: "Z",
+            version: "1.0"
+          },
+          geometricError: 128,
+          root: {
+            boundingVolume: {
+              "box": [
+                0,
+                0,
+                0,
+                512,
+                0,
+                0,
+                0,
+                512,
+                0,
+                0,
+                0,
+                32
+              ]
+            },
+            geometricError: 128,
+            transform: [
+              0.968635634,
+              0.248485428,
+              0,
+              0,
+              -0.159864611,
+              0.623177624,
+              0.765567081,
+              0,
+              0.190232264,
+              -0.741555555,
+              0.643356079,
+              0,
+              1215018.019158861,
+              -4736333.073199854,
+              4081622.5918742213,
+              1
+            ]
+            ,
+            refine: "ADD",
+            children: []
+          }
+        }
+        for (let i = 0; i < 5; i++) {
+          brjson.root.children[i] = {
+            transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            boundingVolume: {
+              box: [0, 0, 0, tilesetJson.sceneModels[i].extents.x,
+                0, 0, 0, tilesetJson.sceneModels[i].extents.y,
+                0, 0, 0, tilesetJson.sceneModels[i].extents.z]
+            },
+            geometrixError: 128,
+            content: {
+              url: `http://bimrun.com/bim/resource/` + getOglPath(tilesetJson, tilesetJson.sceneModels[i].geometryId),
+            },
+            materialInfo: {}
+          }
+        }
+        // console.log(brjson);
+        tilesetJson = brjson;
+        that._root = that.loadTileset(resource, tilesetJson);
+        var gltfUpAxis = defined(tilesetJson.asset.gltfUpAxis)
+          ? Axis.fromName(tilesetJson.asset.gltfUpAxis)
+          : Axis.Y;
+        var asset = tilesetJson.asset;
+        that._asset = asset;
+        that._properties = tilesetJson.properties;
+        that._geometricError = tilesetJson.geometricError;
+        that._extensionsUsed = tilesetJson.extensionsUsed;
+        that._extensions = tilesetJson.extensions;
+        that._gltfUpAxis = gltfUpAxis;
+        that._extras = tilesetJson.extras;
+
+        var extras = asset.extras;
+        if (
+          defined(extras) &&
+          defined(extras.cesium) &&
+          defined(extras.cesium.credits)
+        ) {
+          var extraCredits = extras.cesium.credits;
+          var credits = that._credits;
+          if (!defined(credits)) {
+            credits = [];
+            that._credits = credits;
+          }
+          for (var i = 0; i < extraCredits.length; ++i) {
+            var credit = extraCredits[i];
+            credits.push(new Credit(credit.html, credit.showOnScreen));
+          }
+        }
+
+        // Save the original, untransformed bounding volume position so we can apply
+        // the tile transform and model matrix at run time
+        var boundingVolume = that._root.createBoundingVolume(
+        tilesetJson.root.boundingVolume,
+        Matrix4.IDENTITY
+      );
+      var clippingPlanesOrigin = boundingVolume.boundingSphere.center;
+      // If this origin is above the surface of the earth
+      // we want to apply an ENU orientation as our best guess of orientation.
+      // Otherwise, we assume it gets its position/orientation completely from the
+      // root tile transform and the tileset's model matrix
+      var originCartographic = that._ellipsoid.cartesianToCartographic(
+        clippingPlanesOrigin
+      );
+      if (
+        defined(originCartographic) &&
+        originCartographic.height >
+          ApproximateTerrainHeights._defaultMinTerrainHeight
+      ) {
+        that._initialClippingPlanesOriginMatrix = Transforms.eastNorthUpToFixedFrame(
+          clippingPlanesOrigin
+        );
+      }
+      that._clippingPlanesOriginMatrix = Matrix4.clone(
+        that._initialClippingPlanesOriginMatrix
+      );
+      that._readyPromise.resolve(that);
+    })
+    .otherwise(function (error) {
+      that._readyPromise.reject(error);
+    });
+  } else {
+    console.log('normalTileset');
+    when(options.url)
     .then(function (url) {
       var basePath;
       resource = Resource.createIfNeeded(url);
@@ -983,6 +1137,8 @@ function Cesium3DTileset(options) {
     .otherwise(function (error) {
       that._readyPromise.reject(error);
     });
+  }
+  
 }
 
 Object.defineProperties(Cesium3DTileset.prototype, {
@@ -1864,6 +2020,13 @@ function updateDynamicScreenSpaceError(tileset, frameState) {
   tileset._dynamicScreenSpaceErrorComputedDensity = density;
 }
 
+function getOglPath(manifestJson, geometryId){
+  for (let i = 0; i < manifestJson.geometries.length; i++){
+      if (manifestJson.geometries[i].id == geometryId){
+          return manifestJson.geometries[i].oglPath;
+      }
+  };
+};
 ///////////////////////////////////////////////////////////////////////////
 
 function requestContent(tileset, tile) {
