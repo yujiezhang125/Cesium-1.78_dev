@@ -603,7 +603,14 @@ function initialize_ogl(content, arrayBuffer, byteOffset){
     flatShading: true
   } );
   threeMaterial.map = gradientTexture;
-  const threeMesh = new THREE.Mesh(threeGeometry, threeMaterial);
+  // const threeMesh = new THREE.Mesh(threeGeometry, threeMaterial);
+  // 从传入的materialGroupInfo取材质信息
+  var readMaterial = content._tileset.asset.materialGroupMap.get(content._tile._header.sceneModel_materialGroupInfoId);
+  if (defined(readMaterial)){
+    var threeMesh = new THREE.Mesh(threeGeometry, readMaterial);
+  } else {
+    var threeMesh = new THREE.Mesh(threeGeometry, threeMaterial);
+  };
   const gltfExporter = new GLTFExporter();
   var gltfJson = gltfExporter.parse( threeMesh, function ( result ) {
 

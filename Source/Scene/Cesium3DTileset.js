@@ -43,6 +43,10 @@ import StencilConstants from "./StencilConstants.js";
 import TileBoundingRegion from "./TileBoundingRegion.js";
 import TileBoundingSphere from "./TileBoundingSphere.js";
 import TileOrientedBoundingBox from "./TileOrientedBoundingBox.js";
+// jadd
+import * as THREE from "../ThirdParty/three.module.js";
+import threePiOver2 from "../Shaders/Builtin/Constants/threePiOver2.js";
+// jadd end
 
 /**
  * A {@link https://github.com/CesiumGS/3d-tiles/tree/master/specification|3D Tiles tileset},
@@ -974,7 +978,7 @@ function Cesium3DTileset(options) {
             children: []
           }
         }
-        for (let i = 0; i < 25; i++) {
+        for (let i = 0; i < 125; i++) {
           brjson.root.children[i] = {
             // transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
             transform: [tilesetJson.sceneModels[i].matrix[0], tilesetJson.sceneModels[i].matrix[4], tilesetJson.sceneModels[i].matrix[8], 0,
@@ -992,10 +996,54 @@ function Cesium3DTileset(options) {
             },
             materialInfo: {
               color: [200, 200, 200],
-            }
+            },
+            sceneModel_materialGroupInfoId: tilesetJson.sceneModels[i].materialGroupInfoId,
           }
         }
         // 读材质信息
+        var materialMap = new Map();
+        var materialGroupMap = new Map();
+
+        var materialInfos = tilesetJson.materialInfos;
+        materialInfos.forEach((materialInfo) => {
+          // let material = new THREE.MeshPhongMaterial();
+          let material = new THREE.MeshBasicMaterial();
+          if (materialInfo.name !== undefined) material.name = materialInfo.name;
+          if (materialInfo.color !== undefined) material.color = new THREE.Color(materialInfo.color[0] / 255, materialInfo.color[1] / 255, materialInfo.color[2] / 255);
+          if (materialInfo.opacity !== undefined) material.opacity = materialInfo.opacity;
+          material.transparent = parseFloat(materialInfo.opacity) < 1;
+          // if (!!materialInfo.kdMapPath) {
+          //     let texture = new THREE.TextureLoader().load(`http://bimrun.com/bim/resource/` + materialInfo.kdMapPath);
+          //     texture.wrapS = THREE.RepeatWrapping;
+          //     texture.wrapT = THREE.RepeatWrapping;
+          //     material.map = texture;
+          //     material.map.generateMipmaps = true;
+          //     material.color = null;
+          // }
+
+          // if (!!materialInfo.bumpMapPath) {
+          //     let texture = new THREE.TextureLoader().load(`http://bimrun.com/bim/resource/` + materialInfo.bumpMapPath);
+          //     texture.wrapS = THREE.RepeatWrapping;
+          //     texture.wrapT = THREE.RepeatWrapping;
+          //     material.normalMap = texture;
+          //     material.normalMap.generateMipmaps = true;
+          // }
+          material.shininess = materialInfo.shininess;
+          materialMap.set(materialInfo.id, material);
+        });
+
+        var materialGroupInfos = tilesetJson.materialGroupInfos;
+        materialGroupInfos.forEach((materialGroupInfo) => {
+          var materialGroup = [];
+
+          materialGroupInfo.materialInfos.forEach((materialId) => {
+              materialGroup.push(materialMap.get(materialId));
+          });
+          materialGroupMap.set(materialGroupInfo.id, materialGroup);
+        });
+        // 材质信息记录到brjson的asset属性
+        brjson.asset.materialMap = materialMap;
+        brjson.asset.materialGroupMap = materialGroupMap;
         // 拼接后的tileset.json进行加载
         // console.log(brjson);
         tilesetJson = brjson;
