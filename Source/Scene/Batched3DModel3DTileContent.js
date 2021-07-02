@@ -19,6 +19,10 @@ import ClassificationModel from "./ClassificationModel.js";
 import Model from "./Model.js";
 import ModelUtility from "./ModelUtility.js";
 import ModelAnimationLoop from "./ModelAnimationLoop.js";
+// jadd
+import * as THREE from "../ThirdParty/three.module.js";
+import { GLTFExporter } from '../ThirdParty/GLTFExporter.js'
+// jadd end
 
 /**
  * Represents the contents of a
@@ -56,7 +60,13 @@ function Batched3DModel3DTileContent(
 
   this.featurePropertiesDirty = false;
 
-  initialize(this, arrayBuffer, byteOffset);
+  // jadd
+  if (byteOffset != 123.456){
+    initialize(this, arrayBuffer, byteOffset);
+  } else {
+    initialize_ogl(this, arrayBuffer, 0)
+  };
+  // jadd end
 }
 
 // This can be overridden for testing purposes
@@ -462,6 +472,382 @@ function initialize(content, arrayBuffer, byteOffset) {
     });
   }
 }
+
+// jadd
+function initialize_ogl(content, arrayBuffer, byteOffset){
+  var tileset = content._tileset;
+  var tile = content._tile;
+  var resource = content._resource;
+
+  var byteStart = defaultValue(byteOffset, 0);
+  byteOffset = byteStart;
+
+  var uint8Array = new Uint8Array(arrayBuffer);
+  var view = new DataView(arrayBuffer);
+  byteOffset += sizeOfUint32; // Skip magic
+
+  byteOffset += sizeOfUint32;
+
+  var byteLength = view.getUint32(byteOffset, true);
+  byteOffset += sizeOfUint32;
+
+  var featureTableJsonByteLength = view.getUint32(byteOffset, true);
+  byteOffset += sizeOfUint32;
+
+  var featureTableBinaryByteLength = view.getUint32(byteOffset, true);
+  byteOffset += sizeOfUint32;
+
+  var batchTableJsonByteLength = view.getUint32(byteOffset, true);
+  byteOffset += sizeOfUint32;
+
+  var batchTableBinaryByteLength = view.getUint32(byteOffset, true);
+  byteOffset += sizeOfUint32;
+
+  var batchLength;
+
+  if (batchTableJsonByteLength >= 570425344) {
+    // First legacy check
+    byteOffset -= sizeOfUint32 * 2;
+    batchLength = featureTableJsonByteLength;
+    batchTableJsonByteLength = featureTableBinaryByteLength;
+    batchTableBinaryByteLength = 0;
+    featureTableJsonByteLength = 0;
+    featureTableBinaryByteLength = 0;
+    // Batched3DModel3DTileContent._deprecationWarning(
+    //   "b3dm-legacy-header",
+    //   "This b3dm header is using the legacy format [batchLength] [batchTableByteLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
+    // );
+  } else if (batchTableBinaryByteLength >= 570425344) {
+    // Second legacy check
+    byteOffset -= sizeOfUint32;
+    batchLength = batchTableJsonByteLength;
+    batchTableJsonByteLength = featureTableJsonByteLength;
+    batchTableBinaryByteLength = featureTableBinaryByteLength;
+    featureTableJsonByteLength = 0;
+    featureTableBinaryByteLength = 0;
+    // Batched3DModel3DTileContent._deprecationWarning(
+    //   "b3dm-legacy-header",
+    //   "This b3dm header is using the legacy format [batchTableJsonByteLength] [batchTableBinaryByteLength] [batchLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
+    // );
+  }
+
+  var featureTableJson;
+  if (featureTableJsonByteLength === 0) {
+    featureTableJson = {
+      BATCH_LENGTH: defaultValue(batchLength, 0),
+    };
+  } else {
+    var featureTableString = getStringFromTypedArray(
+      uint8Array,
+      byteOffset,
+      featureTableJsonByteLength
+    );
+    featureTableJson = JSON.parse(featureTableString);
+    byteOffset += featureTableJsonByteLength;
+  }
+
+  var featureTableBinary = new Uint8Array(
+    arrayBuffer,
+    byteOffset,
+    featureTableBinaryByteLength
+  );
+  byteOffset += featureTableBinaryByteLength;
+
+  var featureTable = new Cesium3DTileFeatureTable(
+    featureTableJson,
+    featureTableBinary
+  );
+
+  batchLength = featureTable.getGlobalProperty("BATCH_LENGTH");
+  featureTable.featuresLength = batchLength;
+
+  var batchTableJson;
+  var batchTableBinary;
+
+  var colorChangedCallback;
+  if (defined(tileset.classificationType)) {
+    colorChangedCallback = createColorChangedCallback(content);
+  }
+
+  var batchTable = new Cesium3DTileBatchTable(
+    content,
+    batchLength,
+    batchTableJson,
+    batchTableBinary,
+    colorChangedCallback
+  );
+  content._batchTable = batchTable;
+  
+  var gltfView;
+  // ogl转为geometry, 构成mesh, 导出为gltf
+  const threeGeometry = oglParserFunction(arrayBuffer);
+  // Make linear gradient texture
+  const data = new Uint8ClampedArray( 100 * 100 * 3 );
+  for ( let y = 0; y < 100; y ++ ) {
+
+    for ( let x = 0; x < 100; x ++ ) {
+
+      data[ 3 * ( 100 * y + x ) ] = Math.round( 255 * y / 99 );
+      data[ 3 * ( 100 * y + x ) + 1 ] = Math.round( 255 - 255 * y / 99 );
+
+    }
+
+  }
+  const gradientTexture = new THREE.DataTexture( data, 100, 100, THREE.RGBFormat );
+  gradientTexture.minFilter = THREE.LinearFilter;
+  gradientTexture.magFilter = THREE.LinearFilter;
+  const threeMaterial = new THREE.MeshStandardMaterial( {
+    color: 0xffff00,
+    metalness: 0.5,
+    roughness: 1.0,
+    flatShading: true
+  } );
+  threeMaterial.map = gradientTexture;
+  const threeMesh = new THREE.Mesh(threeGeometry, threeMaterial);
+  const gltfExporter = new GLTFExporter();
+  var gltfJson = gltfExporter.parse( threeMesh, function ( result ) {
+
+    if ( result instanceof ArrayBuffer ) {
+
+      console.log( '?arraybuffer?' );
+      // saveArrayBuffer( result, 'scene.glb' );
+
+    } else {
+
+      const output = JSON.stringify( result, null, 2 );
+      // console.log(output);
+      gltfView = JSON.parse(output);
+      var pickObject = {
+        content: content,
+        primitive: tileset,
+      };
+    
+      content._rtcCenterTransform = Matrix4.IDENTITY;
+      var rtcCenter = featureTable.getGlobalProperty(
+        "RTC_CENTER",
+        ComponentDatatype.FLOAT,
+        3
+      );
+      if (defined(rtcCenter)) {
+        content._rtcCenterTransform = Matrix4.fromTranslation(
+          Cartesian3.fromArray(rtcCenter)
+        );
+      }
+    
+      content._contentModelMatrix = Matrix4.multiply(
+        tile.computedTransform,
+        content._rtcCenterTransform,
+        new Matrix4()
+      );
+    
+      if (!defined(tileset.classificationType)) {
+        // PERFORMANCE_IDEA: patch the shader on demand, e.g., the first time show/color changes.
+        // The pick shader still needs to be patched.
+        content._model = new Model({
+          gltf: gltfView,
+          cull: false, // The model is already culled by 3D Tiles
+          releaseGltfJson: true, // Models are unique and will not benefit from caching so save memory
+          opaquePass: Pass.CESIUM_3D_TILE, // Draw opaque portions of the model during the 3D Tiles pass
+          basePath: resource,
+          requestType: RequestType.TILES3D,
+          modelMatrix: content._contentModelMatrix,
+          upAxis: tileset._gltfUpAxis,
+          forwardAxis: Axis.X,
+          shadows: tileset.shadows,
+          debugWireframe: tileset.debugWireframe,
+          incrementallyLoadTextures: false,
+          vertexShaderLoaded: getVertexShaderCallback(content),
+          fragmentShaderLoaded: getFragmentShaderCallback(content),
+          uniformMapLoaded: batchTable.getUniformMapCallback(),
+          pickIdLoaded: getPickIdCallback(content),
+          addBatchIdToGeneratedShaders: batchLength > 0, // If the batch table has values in it, generated shaders will need a batchId attribute
+          pickObject: pickObject,
+          imageBasedLightingFactor: tileset.imageBasedLightingFactor,
+          lightColor: tileset.lightColor,
+          luminanceAtZenith: tileset.luminanceAtZenith,
+          sphericalHarmonicCoefficients: tileset.sphericalHarmonicCoefficients,
+          specularEnvironmentMaps: tileset.specularEnvironmentMaps,
+          backFaceCulling: tileset.backFaceCulling,
+        });
+        content._model.readyPromise.then(function (model) {
+          model.activeAnimations.addAll({
+            loop: ModelAnimationLoop.REPEAT,
+          });
+        });
+      } else {
+        // This transcodes glTF to an internal representation for geometry so we can take advantage of the re-batching of vector data.
+        // For a list of limitations on the input glTF, see the documentation for classificationType of Cesium3DTileset.
+        content._model = new ClassificationModel({
+          gltf: gltfView,
+          cull: false, // The model is already culled by 3D Tiles
+          basePath: resource,
+          requestType: RequestType.TILES3D,
+          modelMatrix: content._contentModelMatrix,
+          upAxis: tileset._gltfUpAxis,
+          forwardAxis: Axis.X,
+          debugWireframe: tileset.debugWireframe,
+          vertexShaderLoaded: getVertexShaderCallback(content),
+          classificationShaderLoaded: getClassificationFragmentShaderCallback(
+            content
+          ),
+          uniformMapLoaded: batchTable.getUniformMapCallback(),
+          pickIdLoaded: getPickIdCallback(content),
+          classificationType: tileset._classificationType,
+          batchTable: batchTable,
+        });
+      }
+      return output;
+      // saveString( output, 'scene.gltf' );
+
+    }
+
+  });
+  // gltfView = JSON.parse("jsonjson");
+  gltfView = JSON.parse("{\n  \"asset\": {\n    \"version\": \"2.0\",\n    \"generator\": \"THREE.GLTFExporter\"\n  },\n  \"scenes\": [\n    {\n      \"name\": \"AuxScene\",\n      \"nodes\": [\n        0\n      ]\n    }\n  ],\n  \"scene\": 0,\n  \"nodes\": [\n    {\n      \"mesh\": 0\n    }\n  ],\n  \"bufferViews\": [\n    {\n      \"buffer\": 0,\n      \"byteOffset\": 0,\n      \"byteLength\": 288,\n      \"target\": 34962,\n      \"byteStride\": 12\n    },\n    {\n      \"buffer\": 0,\n      \"byteOffset\": 288,\n      \"byteLength\": 288,\n      \"target\": 34962,\n      \"byteStride\": 12\n    },\n    {\n      \"buffer\": 0,\n      \"byteOffset\": 576,\n      \"byteLength\": 192,\n      \"target\": 34962,\n      \"byteStride\": 8\n    },\n    {\n      \"buffer\": 0,\n      \"byteOffset\": 768,\n      \"byteLength\": 72,\n      \"target\": 34963\n    }\n  ],\n  \"buffers\": [\n    {\n      \"byteLength\": 840,\n      \"uri\": \"data:application/octet-stream;base64,rkdDQQEAQD8rXA8+r0dDwQEAQD8rXA8+r0dDwQAAQL8rXA8+rkdDQQAAQL8rXA8+rkdDQQEAQD8sXA++rkdDQQAAQL8sXA++r0dDwQAAQL8sXA++r0dDwQEAQD8sXA++r0dDwQEAQD8rXA8+rkdDQQEAQD8rXA8+rkdDQQEAQD8sXA++r0dDwQEAQD8sXA++rkdDQQAAQL8rXA8+r0dDwQAAQL8rXA8+r0dDwQAAQL8sXA++rkdDQQAAQL8sXA++rkdDQQEAQD8rXA8+rkdDQQAAQL8rXA8+rkdDQQAAQL8sXA++rkdDQQEAQD8sXA++r0dDwQAAQL8rXA8+r0dDwQEAQD8rXA8+r0dDwQEAQD8sXA++r0dDwQAAQL8sXA++MD/UpAAAAAAAAIA/MD/UpAAAAAAAAIA/MD/UpAAAAAAAAIA/MD/UpAAAAAAAAIA/MD/UJAAAAAAAAIC/MD/UJAAAAAAAAIC/MD/UJAAAAAAAAIC/MD/UJAAAAAAAAIC/AAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgD8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAAAAAAAAgL8AAAAAAACAPwAAAAAK3uOmAACAPwAAAAAK3uOmAACAPwAAAAAK3uOmAACAPwAAAAAK3uOmAACAvwAAAACcpd6nAACAvwAAAACcpd6nAACAvwAAAACcpd6nAACAvwAAAACcpd6nVlUVPwAAyMBWlcxCAADIwFaVzEIAAAAAVlUVPwAAAABWVRW/AADIwFZVFb8AAAAAVpXMwgAAAABWlczCAADIwFaVzEJWVRU/VlUVP1ZVFT9WVRU/VlUVv1aVzEJWVRW/VlUVP1ZVFb9WlcxCVlUVv1aVzEJWVRU/VlUVP1ZVFT9WVRU/AADIwFZVFT8AAAAAVlUVvwAAAABWVRW/AADIwFZVFb8AAAAAVlUVvwAAyMBWVRU/AADIwFZVFT8AAAAAAwAAAAIAAQACAAAABgAHAAUABAAFAAcACAAJAAoACgALAAgADAANAA4ADgAPAAwAEwAQABEAEQASABMAFQAWABcAFwAUABUA\"\n    }\n  ],\n  \"accessors\": [\n    {\n      \"bufferView\": 0,\n      \"componentType\": 5126,\n      \"count\": 24,\n      \"max\": [\n        12.204999923706055,\n        0.7500000596046448,\n        0.14000003039836884\n      ],\n      \"min\": [\n        -12.205000877380371,\n        -0.75,\n        -0.14000004529953003\n      ],\n      \"type\": \"VEC3\"\n    },\n    {\n      \"bufferView\": 1,\n      \"componentType\": 5126,\n      \"count\": 24,\n      \"max\": [\n        1,\n        1,\n        1\n      ],\n      \"min\": [\n        -1,\n        -1,\n        -1\n      ],\n      \"type\": \"VEC3\"\n    },\n    {\n      \"bufferView\": 2,\n      \"componentType\": 5126,\n      \"count\": 24,\n      \"max\": [\n        102.29167175292969,\n        0.5833333730697632\n      ],\n      \"min\": [\n        -102.29167175292969,\n        -6.25\n      ],\n      \"type\": \"VEC2\"\n    },\n    {\n      \"bufferView\": 3,\n      \"componentType\": 5123,\n      \"count\": 36,\n      \"max\": [\n        23\n      ],\n      \"min\": [\n        0\n      ],\n      \"type\": \"SCALAR\"\n    }\n  ],\n  \"materials\": [\n    {\n      \"pbrMetallicRoughness\": {\n        \"baseColorFactor\": [\n          1,\n          1,\n          0,\n          1\n        ],\n        \"metallicFactor\": 0.5,\n        \"roughnessFactor\": 1,\n        \"baseColorTexture\": {\n          \"index\": 0\n        }\n      }\n    }\n  ],\n  \"textures\": [\n    {\n      \"sampler\": 0,\n      \"source\": 0\n    }\n  ],\n  \"samplers\": [\n    {\n      \"magFilter\": 9729,\n      \"minFilter\": 9729,\n      \"wrapS\": 33071,\n      \"wrapT\": 33071\n    }\n  ],\n  \"images\": [\n    {\n      \"mimeType\": \"image/jpeg\",\n      \"uri\": \"data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAMCAgICAgMCAgIDAwMDBAYEBAQEBAgGBgUGCQgKCgkICQkKDA8MCgsOCwkJDRENDg8QEBEQCgwSExIQEw8QEBD/2wBDAQMDAwQDBAgEBAgQCwkLEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBD/wAARCABkAGQDASIAAhEBAxEB/8QAFwABAQEBAAAAAAAAAAAAAAAAAAQFBv/EABkQAAMBAQEAAAAAAAAAAAAAAAABE2FRAv/EABgBAQEBAQEAAAAAAAAAAAAAAAAHBQgE/8QAGhEBAAMAAwAAAAAAAAAAAAAAABMVYQESUf/aAAwDAQACEQMRAD8A7O76Lvpn3XRddOJonCVFjQu+i76Z910XXREUWNC76Lvpn3XRddERRY0Lvou+mfddF10RFFjQu+i76Z910XXREUWNC76Lvpn3XRddERRY0LvoM+66BEUWM++sX1kFtFtNKJZaLF99YvrILaLaIiixffWL6yC2i2iIosX31i+sgtotoiKLF99YvrILaLaIiixffWL6yC2i2iIosX31ggtoERRYzr6xfWQXFzSiWSixffWL6yC4uIiixffWL6yC4uIiixffWL6yC4uIiixffWL6yC4uIiixffWL6yC4uIiixffWCC4ERRYz7i5n3FzSiWaixoXFzPuLiIosaFxcz7i4iKLGhcXM+4uIiixoXFzPuLiIosaFxcz7i4iKLGhcGfcCIosZ9xcgvqF9RpRLLRYvuLkF9QvqERRYvuLkF9QvqERRYvuLkF9QvqERRYvuLkF9QvqERRYvuLkF9QvqERRYvuCC+oCIosZ1tFtIL6hfUaMSy0WL7aLaQX1C+oRFFi+2i2kF9QvqERRYvtotpBfUL6hEUWL7aLaQX1C+oRFFi+2i2kF9QvqERRYvtoIL6gIiixDT10U9dAPYofXjwp66KeugA68eFPXRT10AHXjwp66KeugA68eFPXRT10AHXjwp66KeugA68eFPXQADrx4//9k=\"\n    }\n  ],\n  \"meshes\": [\n    {\n      \"primitives\": [\n        {\n          \"mode\": 4,\n          \"attributes\": {\n            \"POSITION\": 0,\n            \"NORMAL\": 1,\n            \"TEXCOORD_0\": 2\n          },\n          \"indices\": 3,\n          \"material\": 0\n        }\n      ]\n    }\n  ]\n}");
+
+  var pickObject = {
+    content: content,
+    primitive: tileset,
+  };
+
+  content._rtcCenterTransform = Matrix4.IDENTITY;
+  var rtcCenter = featureTable.getGlobalProperty(
+    "RTC_CENTER",
+    ComponentDatatype.FLOAT,
+    3
+  );
+  if (defined(rtcCenter)) {
+    content._rtcCenterTransform = Matrix4.fromTranslation(
+      Cartesian3.fromArray(rtcCenter)
+    );
+  }
+
+  content._contentModelMatrix = Matrix4.multiply(
+    tile.computedTransform,
+    content._rtcCenterTransform,
+    new Matrix4()
+  );
+
+  if (!defined(tileset.classificationType)) {
+    // PERFORMANCE_IDEA: patch the shader on demand, e.g., the first time show/color changes.
+    // The pick shader still needs to be patched.
+    content._model = new Model({
+      gltf: gltfView,
+      cull: false, // The model is already culled by 3D Tiles
+      releaseGltfJson: true, // Models are unique and will not benefit from caching so save memory
+      opaquePass: Pass.CESIUM_3D_TILE, // Draw opaque portions of the model during the 3D Tiles pass
+      basePath: resource,
+      requestType: RequestType.TILES3D,
+      modelMatrix: content._contentModelMatrix,
+      upAxis: tileset._gltfUpAxis,
+      forwardAxis: Axis.X,
+      shadows: tileset.shadows,
+      debugWireframe: tileset.debugWireframe,
+      incrementallyLoadTextures: false,
+      vertexShaderLoaded: getVertexShaderCallback(content),
+      fragmentShaderLoaded: getFragmentShaderCallback(content),
+      uniformMapLoaded: batchTable.getUniformMapCallback(),
+      pickIdLoaded: getPickIdCallback(content),
+      addBatchIdToGeneratedShaders: batchLength > 0, // If the batch table has values in it, generated shaders will need a batchId attribute
+      pickObject: pickObject,
+      imageBasedLightingFactor: tileset.imageBasedLightingFactor,
+      lightColor: tileset.lightColor,
+      luminanceAtZenith: tileset.luminanceAtZenith,
+      sphericalHarmonicCoefficients: tileset.sphericalHarmonicCoefficients,
+      specularEnvironmentMaps: tileset.specularEnvironmentMaps,
+      backFaceCulling: tileset.backFaceCulling,
+    });
+    content._model.readyPromise.then(function (model) {
+      model.activeAnimations.addAll({
+        loop: ModelAnimationLoop.REPEAT,
+      });
+    });
+  } else {
+    // This transcodes glTF to an internal representation for geometry so we can take advantage of the re-batching of vector data.
+    // For a list of limitations on the input glTF, see the documentation for classificationType of Cesium3DTileset.
+    content._model = new ClassificationModel({
+      gltf: gltfView,
+      cull: false, // The model is already culled by 3D Tiles
+      basePath: resource,
+      requestType: RequestType.TILES3D,
+      modelMatrix: content._contentModelMatrix,
+      upAxis: tileset._gltfUpAxis,
+      forwardAxis: Axis.X,
+      debugWireframe: tileset.debugWireframe,
+      vertexShaderLoaded: getVertexShaderCallback(content),
+      classificationShaderLoaded: getClassificationFragmentShaderCallback(
+        content
+      ),
+      uniformMapLoaded: batchTable.getUniformMapCallback(),
+      pickIdLoaded: getPickIdCallback(content),
+      classificationType: tileset._classificationType,
+      batchTable: batchTable,
+    });
+  }
+}
+
+// jadd 
+function oglParserFunction(buffer, geometryId, extend){
+  var reader = new ArrayBufferReader(buffer);
+  var geometry = new THREE.BufferGeometry();
+  reader.getUint32();
+  geometry.setAttribute('position', new THREE.BufferAttribute(reader.getFloat32Array(reader.getUint32()), 3));
+  geometry.setAttribute('normal', new THREE.BufferAttribute(reader.getFloat32Array(reader.getUint32()), 3));
+  var uvCount = reader.getUint32();
+  uvCount && geometry.setAttribute('uv', new THREE.BufferAttribute(reader.getFloat32Array(uvCount), 2));
+  var useInt16 = reader.getUint32() == 0, indexArray, indexLength = reader.getUint32();
+  if (useInt16) {
+      indexArray = reader.getUint16Array(indexLength);
+  }
+  else {
+      indexArray = reader.getUint32Array(indexLength);
+  }
+  geometry.setIndex(new THREE.BufferAttribute(indexArray, 1));
+  //补齐
+  if (indexLength % 2 && useInt16) {
+      reader.offset += 2;
+  }
+  if (extend) //set the extend from param
+      geometry.boundingBox = new THREE.Box3(extend.minimum, extend.maximum);
+  var groupCount = reader.getUint32(); //at least one sub mesh
+  // console.log("groupCount:" + groupCount);
+  for (var i = 0; i < groupCount; i++) {
+      var startIndex = reader.getUint32();
+      var indexCount = reader.getUint32();
+      var materialIndex = reader.getUint32();
+      geometry.addGroup(startIndex, indexCount, materialIndex);
+  }
+  return geometry;
+}
+class ArrayBufferReader {
+  constructor(buffer) {
+    this.buffer = buffer;
+    this.int32Array = new Uint32Array(buffer);
+    this.offset = 0;
+
+    this.getUint32 = function () {
+      var ret = this.int32Array[this.offset / 4]; //this is the trick for fetching the correct uint32 value
+      this.offset += 4;
+      return ret;
+    };
+    this.getUint16Array = function (len) {
+      var ret = new Uint16Array(this.buffer, this.offset, len);
+      this.offset += Uint16Array.BYTES_PER_ELEMENT * len;
+      return ret;
+    };
+    this.getUint32Array = function (len) {
+      var ret = new Uint32Array(this.buffer, this.offset, len);
+      this.offset += Uint32Array.BYTES_PER_ELEMENT * len;
+      return ret;
+    };
+    this.getFloat32Array = function (len) {
+      var ret = new Float32Array(this.buffer, this.offset, len);
+      this.offset += Float32Array.BYTES_PER_ELEMENT * len;
+      return ret;
+    };
+  }
+}
+// jadd end
 
 function createFeatures(content) {
   var featuresLength = content.featuresLength;

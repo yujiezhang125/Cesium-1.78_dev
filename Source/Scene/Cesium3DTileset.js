@@ -924,7 +924,8 @@ function Cesium3DTileset(options) {
     })
       .then(function (tilesetJson) {
         console.log('thenthenthen')
-        // console.log(json);
+        console.log(tilesetJson);
+        // manifest内容拼接为tileset.json格式
         var brjson = {
           asset: {
             generatetool: "@yujiezhang125",
@@ -973,9 +974,13 @@ function Cesium3DTileset(options) {
             children: []
           }
         }
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 25; i++) {
           brjson.root.children[i] = {
-            transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            // transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            transform: [tilesetJson.sceneModels[i].matrix[0], tilesetJson.sceneModels[i].matrix[4], tilesetJson.sceneModels[i].matrix[8], 0,
+                        tilesetJson.sceneModels[i].matrix[1], tilesetJson.sceneModels[i].matrix[5], tilesetJson.sceneModels[i].matrix[9], 0, 
+                        tilesetJson.sceneModels[i].matrix[2], tilesetJson.sceneModels[i].matrix[6], tilesetJson.sceneModels[i].matrix[10], 0, 
+                        tilesetJson.sceneModels[i].matrix[3], tilesetJson.sceneModels[i].matrix[7], tilesetJson.sceneModels[i].matrix[11], 1],
             boundingVolume: {
               box: [0, 0, 0, tilesetJson.sceneModels[i].extents.x,
                 0, 0, 0, tilesetJson.sceneModels[i].extents.y,
@@ -985,9 +990,13 @@ function Cesium3DTileset(options) {
             content: {
               url: `http://bimrun.com/bim/resource/` + getOglPath(tilesetJson, tilesetJson.sceneModels[i].geometryId),
             },
-            materialInfo: {}
+            materialInfo: {
+              color: [200, 200, 200],
+            }
           }
         }
+        // 读材质信息
+        // 拼接后的tileset.json进行加载
         // console.log(brjson);
         tilesetJson = brjson;
         that._root = that.loadTileset(resource, tilesetJson);

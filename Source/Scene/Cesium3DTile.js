@@ -1009,17 +1009,30 @@ Cesium3DTile.prototype.requestContent = function () {
           arrayBuffer,
           0
         );
-      } else {
-        // The content may be json instead
-        content = Cesium3DTileContentFactory.json(
+      } else { // jadd
+        console.log('ogl');
+        contentFactory = Cesium3DTileContentFactory['b3dm'];
+        content = contentFactory(
           tileset,
           that,
-          that._contentResource,
+          that.contentResource,
           arrayBuffer,
-          0
-        );
-        that.hasTilesetContent = true;
-      }
+          123.456
+        )
+      } 
+      // else {
+      //   console.log(magic);
+      //   // The content may be json instead
+      //   content = Cesium3DTileContentFactory.json(
+      //     tileset,
+      //     that,
+      //     that._contentResource,
+      //     arrayBuffer,
+      //     0
+      //   );
+      //   that.hasTilesetContent = true;
+      // }
+      // jadd end
 
       if (expired) {
         that.expireDate = undefined;

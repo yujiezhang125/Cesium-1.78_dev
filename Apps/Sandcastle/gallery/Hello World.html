@@ -47,10 +47,11 @@
         var tileset = viewer.scene.primitives.add(
           new Cesium.Cesium3DTileset(para)
         );
+        tileset.modelName = 'zzzcubic';
 
         viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
-        tileset.readyPromise.then(function(tileset){
-          viewer.zoomTo(tileset, {heading: 0, pitch: -0.7, range: 4000});
+        tileset.readyPromise.then(function (tileset) {
+          viewer.zoomTo(tileset, { heading: 0, pitch: -0.7, range: 4000 });
         });
 
         // 添加BimrunManifest模型
@@ -71,6 +72,16 @@
             url: 'http://bimrun.com/bim/webgl/manifest?1=1&sceneId=101534881',
           })
         )
+
+        Sandcastle.addToolbarButton('remove', function() {
+          for (let i = 0; i < viewer.scene.primitives.length; i++) {
+            const item = viewer.scene.primitives.get(i);
+            if (item.modelName === 'zzzcubic') {
+              // if (!item.ready) return item.readyPromise
+              viewer.scene.primitives.remove(item);
+            }
+          }
+        });
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }
