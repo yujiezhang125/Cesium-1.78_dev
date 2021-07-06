@@ -900,7 +900,214 @@ function Cesium3DTileset(options) {
 
   var that = this;
   var resource;
-  when(options.url)
+  if (defined(options.brTileset)){
+    console.log('manifestTileset');
+    when(options.url)
+    .then(function (url) {
+      var basePath;
+      resource = Resource.createIfNeeded(url);
+      that._resource = resource;
+
+      // ion resources have a credits property we can use for additional attribution.
+      that._credits = resource.credits;
+
+      if (resource.extension === "json") {
+        basePath = resource.getBaseUri(true);
+      } else if (resource.isDataUri) {
+        basePath = "";
+      }
+
+      that._url = resource.url;
+      that._basePath = basePath;
+
+      return Cesium3DTileset.loadJson(resource);
+    })
+      .then(function (tilesetJson) {
+        console.log('thenthenthen')
+        console.log(tilesetJson);
+        // manifest内容拼接为tileset.json格式
+        var brjson = {
+          asset: {
+            generatetool: "@yujiezhang125",
+            gltfUpAxis: "Z",
+            version: "1.0"
+          },
+          geometricError: 128,
+          root: {
+            boundingVolume: {
+              "box": [
+                0,
+                0,
+                0,
+                512,
+                0,
+                0,
+                0,
+                512,
+                0,
+                0,
+                0,
+                32
+              ]
+            },
+            geometricError: 128,
+            transform: [
+              0.968635634,
+              0.248485428,
+              0,
+              0,
+              -0.159864611,
+              0.623177624,
+              0.765567081,
+              0,
+              0.190232264,
+              -0.741555555,
+              0.643356079,
+              0,
+              1215018.019158861,
+              -4736333.073199854,
+              4081622.5918742213,
+              1
+            ]
+            ,
+            refine: "ADD",
+            children: []
+          }
+        }
+        for (let i = 0; i < 125; i++) {
+          brjson.root.children[i] = {
+            // transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+            transform: [tilesetJson.sceneModels[i].matrix[0], tilesetJson.sceneModels[i].matrix[4], tilesetJson.sceneModels[i].matrix[8], 0,
+                        tilesetJson.sceneModels[i].matrix[1], tilesetJson.sceneModels[i].matrix[5], tilesetJson.sceneModels[i].matrix[9], 0, 
+                        tilesetJson.sceneModels[i].matrix[2], tilesetJson.sceneModels[i].matrix[6], tilesetJson.sceneModels[i].matrix[10], 0, 
+                        tilesetJson.sceneModels[i].matrix[3], tilesetJson.sceneModels[i].matrix[7], tilesetJson.sceneModels[i].matrix[11], 1],
+            boundingVolume: {
+              box: [0, 0, 0, tilesetJson.sceneModels[i].extents.x,
+                0, 0, 0, tilesetJson.sceneModels[i].extents.y,
+                0, 0, 0, tilesetJson.sceneModels[i].extents.z]
+            },
+            geometrixError: 128,
+            content: {
+              url: `http://bimrun.com/bim/resource/` + getOglPath(tilesetJson, tilesetJson.sceneModels[i].geometryId),
+            },
+            materialInfo: {
+              color: [200, 200, 200],
+            },
+            sceneModel_materialGroupInfoId: tilesetJson.sceneModels[i].materialGroupInfoId,
+          }
+        }
+        // 读材质信息
+        var materialMap = new Map();
+        var materialGroupMap = new Map();
+
+        var materialInfos = tilesetJson.materialInfos;
+        materialInfos.forEach((materialInfo) => {
+          // let material = new THREE.MeshPhongMaterial();
+          let material = new THREE.MeshBasicMaterial();
+          if (materialInfo.name !== undefined) material.name = materialInfo.name;
+          if (materialInfo.color !== undefined) material.color = new THREE.Color(materialInfo.color[0] / 255, materialInfo.color[1] / 255, materialInfo.color[2] / 255);
+          if (materialInfo.opacity !== undefined) material.opacity = materialInfo.opacity;
+          material.transparent = parseFloat(materialInfo.opacity) < 1;
+          // if (!!materialInfo.kdMapPath) {
+          //     let texture = new THREE.TextureLoader().load(`http://bimrun.com/bim/resource/` + materialInfo.kdMapPath);
+          //     texture.wrapS = THREE.RepeatWrapping;
+          //     texture.wrapT = THREE.RepeatWrapping;
+          //     material.map = texture;
+          //     material.map.generateMipmaps = true;
+          //     material.color = null;
+          // }
+
+          // if (!!materialInfo.bumpMapPath) {
+          //     let texture = new THREE.TextureLoader().load(`http://bimrun.com/bim/resource/` + materialInfo.bumpMapPath);
+          //     texture.wrapS = THREE.RepeatWrapping;
+          //     texture.wrapT = THREE.RepeatWrapping;
+          //     material.normalMap = texture;
+          //     material.normalMap.generateMipmaps = true;
+          // }
+          material.shininess = materialInfo.shininess;
+          materialMap.set(materialInfo.id, material);
+        });
+
+        var materialGroupInfos = tilesetJson.materialGroupInfos;
+        materialGroupInfos.forEach((materialGroupInfo) => {
+          var materialGroup = [];
+
+          materialGroupInfo.materialInfos.forEach((materialId) => {
+              materialGroup.push(materialMap.get(materialId));
+          });
+          materialGroupMap.set(materialGroupInfo.id, materialGroup);
+        });
+        // 材质信息记录到brjson的asset属性
+        brjson.asset.materialMap = materialMap;
+        brjson.asset.materialGroupMap = materialGroupMap;
+        // 拼接后的tileset.json进行加载
+        // console.log(brjson);
+        tilesetJson = brjson;
+        that._root = that.loadTileset(resource, tilesetJson);
+        var gltfUpAxis = defined(tilesetJson.asset.gltfUpAxis)
+          ? Axis.fromName(tilesetJson.asset.gltfUpAxis)
+          : Axis.Y;
+        var asset = tilesetJson.asset;
+        that._asset = asset;
+        that._properties = tilesetJson.properties;
+        that._geometricError = tilesetJson.geometricError;
+        that._extensionsUsed = tilesetJson.extensionsUsed;
+        that._extensions = tilesetJson.extensions;
+        that._gltfUpAxis = gltfUpAxis;
+        that._extras = tilesetJson.extras;
+
+        var extras = asset.extras;
+        if (
+          defined(extras) &&
+          defined(extras.cesium) &&
+          defined(extras.cesium.credits)
+        ) {
+          var extraCredits = extras.cesium.credits;
+          var credits = that._credits;
+          if (!defined(credits)) {
+            credits = [];
+            that._credits = credits;
+          }
+          for (var i = 0; i < extraCredits.length; ++i) {
+            var credit = extraCredits[i];
+            credits.push(new Credit(credit.html, credit.showOnScreen));
+          }
+        }
+
+        // Save the original, untransformed bounding volume position so we can apply
+        // the tile transform and model matrix at run time
+        var boundingVolume = that._root.createBoundingVolume(
+        tilesetJson.root.boundingVolume,
+        Matrix4.IDENTITY
+      );
+      var clippingPlanesOrigin = boundingVolume.boundingSphere.center;
+      // If this origin is above the surface of the earth
+      // we want to apply an ENU orientation as our best guess of orientation.
+      // Otherwise, we assume it gets its position/orientation completely from the
+      // root tile transform and the tileset's model matrix
+      var originCartographic = that._ellipsoid.cartesianToCartographic(
+        clippingPlanesOrigin
+      );
+      if (
+        defined(originCartographic) &&
+        originCartographic.height >
+          ApproximateTerrainHeights._defaultMinTerrainHeight
+      ) {
+        that._initialClippingPlanesOriginMatrix = Transforms.eastNorthUpToFixedFrame(
+          clippingPlanesOrigin
+        );
+      }
+      that._clippingPlanesOriginMatrix = Matrix4.clone(
+        that._initialClippingPlanesOriginMatrix
+      );
+      that._readyPromise.resolve(that);
+    })
+    .otherwise(function (error) {
+      that._readyPromise.reject(error);
+    });
+  } else {
+    console.log('normalTileset');
+    when(options.url)
     .then(function (url) {
       var basePath;
       resource = Resource.createIfNeeded(url);
@@ -983,6 +1190,7 @@ function Cesium3DTileset(options) {
     .otherwise(function (error) {
       that._readyPromise.reject(error);
     });
+  }
 }
 
 Object.defineProperties(Cesium3DTileset.prototype, {
@@ -1864,6 +2072,13 @@ function updateDynamicScreenSpaceError(tileset, frameState) {
   tileset._dynamicScreenSpaceErrorComputedDensity = density;
 }
 
+function getOglPath(manifestJson, geometryId){
+  for (let i = 0; i < manifestJson.geometries.length; i++){
+      if (manifestJson.geometries[i].id == geometryId){
+          return manifestJson.geometries[i].oglPath;
+      }
+  };
+};
 ///////////////////////////////////////////////////////////////////////////
 
 function requestContent(tileset, tile) {
