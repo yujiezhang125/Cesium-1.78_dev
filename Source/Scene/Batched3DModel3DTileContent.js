@@ -484,74 +484,82 @@ function initialize_ogl(content, arrayBuffer, byteOffset){
 
   var uint8Array = new Uint8Array(arrayBuffer);
   var view = new DataView(arrayBuffer);
-  byteOffset += sizeOfUint32; // Skip magic
+  // byteOffset += sizeOfUint32; // Skip magic
 
-  byteOffset += sizeOfUint32;
+  // byteOffset += sizeOfUint32;
 
-  var byteLength = view.getUint32(byteOffset, true);
-  byteOffset += sizeOfUint32;
+  // var byteLength = view.getUint32(byteOffset, true);
+  // byteOffset += sizeOfUint32;
 
-  var featureTableJsonByteLength = view.getUint32(byteOffset, true);
-  byteOffset += sizeOfUint32;
+  // var featureTableJsonByteLength = view.getUint32(byteOffset, true);
+  // byteOffset += sizeOfUint32;
 
-  var featureTableBinaryByteLength = view.getUint32(byteOffset, true);
-  byteOffset += sizeOfUint32;
+  // var featureTableBinaryByteLength = view.getUint32(byteOffset, true);
+  // byteOffset += sizeOfUint32;
 
-  var batchTableJsonByteLength = view.getUint32(byteOffset, true);
-  byteOffset += sizeOfUint32;
+  // var batchTableJsonByteLength = view.getUint32(byteOffset, true);
+  // byteOffset += sizeOfUint32;
 
-  var batchTableBinaryByteLength = view.getUint32(byteOffset, true);
-  byteOffset += sizeOfUint32;
+  // var batchTableBinaryByteLength = view.getUint32(byteOffset, true);
+  // byteOffset += sizeOfUint32;
 
   var batchLength;
 
-  if (batchTableJsonByteLength >= 570425344) {
-    // First legacy check
-    byteOffset -= sizeOfUint32 * 2;
-    batchLength = featureTableJsonByteLength;
-    batchTableJsonByteLength = featureTableBinaryByteLength;
-    batchTableBinaryByteLength = 0;
-    featureTableJsonByteLength = 0;
-    featureTableBinaryByteLength = 0;
-    // Batched3DModel3DTileContent._deprecationWarning(
-    //   "b3dm-legacy-header",
-    //   "This b3dm header is using the legacy format [batchLength] [batchTableByteLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
-    // );
-  } else if (batchTableBinaryByteLength >= 570425344) {
-    // Second legacy check
-    byteOffset -= sizeOfUint32;
-    batchLength = batchTableJsonByteLength;
-    batchTableJsonByteLength = featureTableJsonByteLength;
-    batchTableBinaryByteLength = featureTableBinaryByteLength;
-    featureTableJsonByteLength = 0;
-    featureTableBinaryByteLength = 0;
-    // Batched3DModel3DTileContent._deprecationWarning(
-    //   "b3dm-legacy-header",
-    //   "This b3dm header is using the legacy format [batchTableJsonByteLength] [batchTableBinaryByteLength] [batchLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
-    // );
-  }
+  // if (batchTableJsonByteLength >= 570425344) {
+  //   // First legacy check
+  //   byteOffset -= sizeOfUint32 * 2;
+  //   batchLength = featureTableJsonByteLength;
+  //   batchTableJsonByteLength = featureTableBinaryByteLength;
+  //   batchTableBinaryByteLength = 0;
+  //   featureTableJsonByteLength = 0;
+  //   featureTableBinaryByteLength = 0;
+  //   // Batched3DModel3DTileContent._deprecationWarning(
+  //   //   "b3dm-legacy-header",
+  //   //   "This b3dm header is using the legacy format [batchLength] [batchTableByteLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
+  //   // );
+  // } else if (batchTableBinaryByteLength >= 570425344) {
+  //   // Second legacy check
+  //   byteOffset -= sizeOfUint32;
+  //   batchLength = batchTableJsonByteLength;
+  //   batchTableJsonByteLength = featureTableJsonByteLength;
+  //   batchTableBinaryByteLength = featureTableBinaryByteLength;
+  //   featureTableJsonByteLength = 0;
+  //   featureTableBinaryByteLength = 0;
+  //   // Batched3DModel3DTileContent._deprecationWarning(
+  //   //   "b3dm-legacy-header",
+  //   //   "This b3dm header is using the legacy format [batchTableJsonByteLength] [batchTableBinaryByteLength] [batchLength]. The new format is [featureTableJsonByteLength] [featureTableBinaryByteLength] [batchTableJsonByteLength] [batchTableBinaryByteLength] from https://github.com/CesiumGS/3d-tiles/tree/master/specification/TileFormats/Batched3DModel."
+  //   // );
+  // }
 
   var featureTableJson;
-  if (featureTableJsonByteLength === 0) {
-    featureTableJson = {
-      BATCH_LENGTH: defaultValue(batchLength, 0),
-    };
-  } else {
-    var featureTableString = getStringFromTypedArray(
-      uint8Array,
-      byteOffset,
-      featureTableJsonByteLength
-    );
-    featureTableJson = JSON.parse(featureTableString);
-    byteOffset += featureTableJsonByteLength;
-  }
+  // if (featureTableJsonByteLength === 0) {
+  //   featureTableJson = {
+  //     BATCH_LENGTH: defaultValue(batchLength, 0),
+  //   };
+  // } else {
+  //   var featureTableString = getStringFromTypedArray(
+  //     uint8Array,
+  //     byteOffset,
+  //     featureTableJsonByteLength
+  //   );
+  //   featureTableJson = JSON.parse(featureTableString);
+  //   byteOffset += featureTableJsonByteLength;
+  // }
+  featureTableJson = {
+    BATCH_LENGTH: 1,
+  };
 
+  // var featureTableBinary = new Uint8Array(
+  //   arrayBuffer,
+  //   byteOffset,
+  //   featureTableBinaryByteLength
+  // );
+  // byteOffset += featureTableBinaryByteLength;
   var featureTableBinary = new Uint8Array(
     arrayBuffer,
     byteOffset,
-    featureTableBinaryByteLength
+    0
   );
-  byteOffset += featureTableBinaryByteLength;
 
   var featureTable = new Cesium3DTileFeatureTable(
     featureTableJson,
@@ -563,32 +571,46 @@ function initialize_ogl(content, arrayBuffer, byteOffset){
 
   var batchTableJson;
   var batchTableBinary;
-  if (batchTableJsonByteLength > 0) {
-    // PERFORMANCE_IDEA: is it possible to allocate this on-demand?  Perhaps keep the
-    // arraybuffer/string compressed in memory and then decompress it when it is first accessed.
-    //
-    // We could also make another request for it, but that would make the property set/get
-    // API async, and would double the number of numbers in some cases.
-    var batchTableString = getStringFromTypedArray(
-      uint8Array,
-      byteOffset,
-      batchTableJsonByteLength
-    );
-    batchTableJson = JSON.parse(batchTableString);
-    byteOffset += batchTableJsonByteLength;
+  // if (batchTableJsonByteLength > 0) {
+  //   // PERFORMANCE_IDEA: is it possible to allocate this on-demand?  Perhaps keep the
+  //   // arraybuffer/string compressed in memory and then decompress it when it is first accessed.
+  //   //
+  //   // We could also make another request for it, but that would make the property set/get
+  //   // API async, and would double the number of numbers in some cases.
+  //   var batchTableString = getStringFromTypedArray(
+  //     uint8Array,
+  //     byteOffset,
+  //     batchTableJsonByteLength
+  //   );
+  //   batchTableJson = JSON.parse(batchTableString);
+  //   byteOffset += batchTableJsonByteLength;
 
-    if (batchTableBinaryByteLength > 0) {
-      // Has a batch table binary
-      batchTableBinary = new Uint8Array(
-        arrayBuffer,
-        byteOffset,
-        batchTableBinaryByteLength
-      );
-      // Copy the batchTableBinary section and let the underlying ArrayBuffer be freed
-      batchTableBinary = new Uint8Array(batchTableBinary);
-      byteOffset += batchTableBinaryByteLength;
-    }
-  }
+  //   if (batchTableBinaryByteLength > 0) {
+  //     // Has a batch table binary
+  //     batchTableBinary = new Uint8Array(
+  //       arrayBuffer,
+  //       byteOffset,
+  //       batchTableBinaryByteLength
+  //     );
+  //     // Copy the batchTableBinary section and let the underlying ArrayBuffer be freed
+  //     batchTableBinary = new Uint8Array(batchTableBinary);
+  //     byteOffset += batchTableBinaryByteLength;
+  //   }
+  // }
+  var batchTableString = '{"batchId":[0], "modelId":["' + content._tile._header.content.modelId + '"], "familyId":["' + content._tile._header.content.familyId + '"], "familyTypeId":["' + content._tile._header.content.familyTypeId + '"], "sceneId":["' + content._tile._header.content.sceneId + '"], "name":["' + content._tile._header.content.name + '"]} ';
+  batchTableJson = JSON.parse(batchTableString);
+
+  // if (batchTableBinaryByteLength > 0) {
+  //   // Has a batch table binary
+  //   batchTableBinary = new Uint8Array(
+  //     arrayBuffer,
+  //     byteOffset,
+  //     batchTableBinaryByteLength
+  //   );
+  //   // Copy the batchTableBinary section and let the underlying ArrayBuffer be freed
+  //   batchTableBinary = new Uint8Array(batchTableBinary);
+  //   byteOffset += batchTableBinaryByteLength;
+  // }
 
   var colorChangedCallback;
   if (defined(tileset.classificationType)) {

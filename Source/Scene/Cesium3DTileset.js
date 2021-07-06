@@ -993,6 +993,11 @@ function Cesium3DTileset(options) {
             geometrixError: 128,
             content: {
               url: `http://bimrun.com/bim/resource/` + getOglPath(tilesetJson, tilesetJson.sceneModels[i].geometryId),
+              modelId: tilesetJson.sceneModels[i].modelId,
+              familyId: tilesetJson.sceneModels[i].familyId,
+              familyTypeId: tilesetJson.sceneModels[i].familyTypeId,
+              sceneId: tilesetJson.sceneModels[i].sceneId,
+              name: tilesetJson.sceneModels[i].name,
             },
             materialInfo: {
               color: [200, 200, 200],
