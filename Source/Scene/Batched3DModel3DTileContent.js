@@ -563,6 +563,32 @@ function initialize_ogl(content, arrayBuffer, byteOffset){
 
   var batchTableJson;
   var batchTableBinary;
+  if (batchTableJsonByteLength > 0) {
+    // PERFORMANCE_IDEA: is it possible to allocate this on-demand?  Perhaps keep the
+    // arraybuffer/string compressed in memory and then decompress it when it is first accessed.
+    //
+    // We could also make another request for it, but that would make the property set/get
+    // API async, and would double the number of numbers in some cases.
+    var batchTableString = getStringFromTypedArray(
+      uint8Array,
+      byteOffset,
+      batchTableJsonByteLength
+    );
+    batchTableJson = JSON.parse(batchTableString);
+    byteOffset += batchTableJsonByteLength;
+
+    if (batchTableBinaryByteLength > 0) {
+      // Has a batch table binary
+      batchTableBinary = new Uint8Array(
+        arrayBuffer,
+        byteOffset,
+        batchTableBinaryByteLength
+      );
+      // Copy the batchTableBinary section and let the underlying ArrayBuffer be freed
+      batchTableBinary = new Uint8Array(batchTableBinary);
+      byteOffset += batchTableBinaryByteLength;
+    }
+  }
 
   var colorChangedCallback;
   if (defined(tileset.classificationType)) {

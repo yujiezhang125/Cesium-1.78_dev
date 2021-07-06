@@ -82,6 +82,15 @@
             }
           }
         });
+        
+        // 点击事件
+        const clickHandler = new Cesium.ScreenSpaceEventHandler(
+          viewer.scene.canvas
+        );
+        clickHandler.setInputAction(function onLeftClick(movement) {
+          console.log('left_click');
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
         //Sandcastle_End
         Sandcastle.finishedLoading();
       }
